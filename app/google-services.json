@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "919970764094",
+    "project_id": "databasegmls",
+    "storage_bucket": "databasegmls.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919970764094:android:6c5359dc3cf59663da486f",
+        "android_client_info": {
+          "package_name": "com.example.gmls"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUyMW3GIbxntGA8VOJ1xcBzq20jNfju4M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
