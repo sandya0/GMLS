@@ -35,6 +35,23 @@ import com.example.gmls.ui.components.DisasterTypeChip
 import com.example.gmls.ui.components.PrimaryButton
 import com.example.gmls.ui.theme.Red
 import java.util.*
+import com.example.gmls.ui.components.GlobalSnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
+import android.content.ContentProvider
+import java.io.File
+import androidx.core.content.FileProvider
+import androidx.navigation.NavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import dagger.hilt.android.EntryPointAccessors
+import com.example.gmls.data.remote.LocationService
 
 /**
  * Data class to hold disaster report information from user input
@@ -47,25 +64,55 @@ data class DisasterReport(
     val type: DisasterType,
     val affectedCount: Int,
     val images: List<Uri>,
-    val timestamp: Date = Date()
+    val timestamp: Date = Date(),
+    val reportedBy: String
 )
+
+fun createImageFile(context: android.content.Context): java.io.File {
+    return java.io.File.createTempFile("IMG_", ".jpg", context.cacheDir)
+}
+
+fun getUriForFile(context: android.content.Context, file: java.io.File): Uri {
+    return FileProvider.getUriForFile(context, context.packageName + ".provider", file)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportDisasterScreen(
-    onSubmit: (DisasterReport) -> Unit,
+    navController: NavController,
+    currentUserId: String,
+    onSubmit: (DisasterReport, Pair<Double, Double>?) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
+    successMessage: String? = null
 ) {
     val context = LocalContext.current
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf<DisasterType?>(null) }
-    var affectedCount by remember { mutableStateOf("0") }
-    var useCurrentLocation by remember { mutableStateOf(true) }
-    var imageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var title by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var location by rememberSaveable { mutableStateOf("") }
+    var selectedType by rememberSaveable(stateSaver = Saver(
+        save = { it?.name },
+        restore = { it?.let { name -> DisasterType.valueOf(name) } }
+    )) { mutableStateOf<DisasterType?>(null) }
+    var affectedCount by rememberSaveable { mutableStateOf("0") }
+    var useCurrentLocation by rememberSaveable { mutableStateOf(true) }
+    var imageUris by rememberSaveable(
+        stateSaver = listSaver(
+            save = { it.map { uri -> uri.toString() } },
+            restore = { it.map { uriStr -> Uri.parse(uriStr) } }
+        )
+    ) { mutableStateOf<List<Uri>>(emptyList()) }
+    var pickedLatLng by rememberSaveable(
+        stateSaver = listSaver<Pair<Double, Double>? , Double>(
+            save = { it?.let { listOf(it.first, it.second) } ?: emptyList() },
+            restore = { list -> if (list.size == 2) Pair(list[0], list[1]) else null }
+        )
+    ) { mutableStateOf<Pair<Double, Double>?>(null) }
 
     var titleError by remember { mutableStateOf<String?>(null) }
     var descriptionError by remember { mutableStateOf<String?>(null) }
@@ -83,6 +130,27 @@ fun ReportDisasterScreen(
         }
     }
 
+    // Camera launcher
+    val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && cameraImageUri.value != null) {
+            imageUris = imageUris + listOf(cameraImageUri.value!!)
+        }
+    }
+
+    // Hilt-injected LocationService
+    val locationService = remember { com.example.gmls.data.remote.LocationService(context) }
+
+    // Show snackbar for error or success
+    LaunchedEffect(errorMessage, successMessage) {
+        errorMessage?.let {
+            coroutineScope.launch { snackbarHostState.showSnackbar(it) }
+        }
+        successMessage?.let {
+            coroutineScope.launch { snackbarHostState.showSnackbar(it) }
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -97,7 +165,8 @@ fun ReportDisasterScreen(
                 }
             )
         },
-        modifier = modifier
+        modifier = modifier,
+        snackbarHost = { GlobalSnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -274,6 +343,37 @@ fun ReportDisasterScreen(
                             }
                         }
                     }
+
+                    if (!useCurrentLocation) {
+                        Button(
+                            onClick = {
+                                navController.navigate("location_picker")
+                            },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Map, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Pick on Map")
+                        }
+                        pickedLatLng?.let { (lat, lng) ->
+                            Text("Selected: $lat, $lng", style = MaterialTheme.typography.bodySmall)
+                        }
+                        // Listen for result from LocationPickerScreen
+                        val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+                        LaunchedEffect(savedStateHandle) {
+                            savedStateHandle?.getLiveData<Pair<Double, Double>>("picked_location")?.observe(lifecycleOwner) { result ->
+                                pickedLatLng = result
+                                if (result != null) {
+                                    // Reverse geocode coordinates to address
+                                    coroutineScope.launch {
+                                        val address = locationService.reverseGeocode(result.first, result.second)
+                                        location = address ?: "Lat: ${result.first}, Lng: ${result.second}"
+                                    }
+                                }
+                                savedStateHandle.remove<Pair<Double, Double>>("picked_location")
+                            }
+                        }
+                    }
                 }
 
                 // Affected People Count
@@ -370,6 +470,44 @@ fun ReportDisasterScreen(
                             }
                         }
 
+                        // Take photo button
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable {
+                                        // Move file/uri creation out of the Composable lambda
+                                        val photoFile = createImageFile(context)
+                                        val uri = getUriForFile(context, photoFile)
+                                        cameraImageUri.value = uri
+                                        cameraLauncher.launch(uri)
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = "Take photo",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Take Photo",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
                         // Selected images
                         items(imageUris) { uri ->
                             Box(
@@ -434,9 +572,10 @@ fun ReportDisasterScreen(
                                 useCurrentLocation = useCurrentLocation,
                                 type = selectedType!!,
                                 affectedCount = affectedCount.toIntOrNull() ?: 0,
-                                images = imageUris
+                                images = imageUris,
+                                reportedBy = currentUserId // Add this
                             )
-                            onSubmit(report)
+                            onSubmit(report, pickedLatLng)
                         }
                     },
                     isLoading = isLoading,
@@ -502,13 +641,4 @@ private fun validateInputs(
     }
 
     return isValid
-}
-
-// Preview function
-@Composable
-fun ReportDisasterScreenPreview() {
-    ReportDisasterScreen(
-        onSubmit = {},
-        onClose = {}
-    )
 }

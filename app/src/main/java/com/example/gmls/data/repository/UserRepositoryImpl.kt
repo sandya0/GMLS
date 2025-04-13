@@ -3,94 +3,83 @@ package com.example.gmls.data.repository
 import com.example.gmls.data.remote.FirebaseService
 import com.example.gmls.domain.model.User
 import com.example.gmls.domain.model.UserFirebaseMapper
+import com.example.gmls.domain.model.EmergencyContact
+import com.example.gmls.domain.model.HouseholdMember
 import com.example.gmls.domain.repository.UserRepository
 import com.example.gmls.ui.screens.auth.RegistrationData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import java.util.*
+import kotlinx.coroutines.flow.Flow
 
-/**
- * Implementation of UserRepository that uses Firebase for data storage
- */
 class UserRepositoryImpl @Inject constructor(
     private val firebaseService: FirebaseService,
     private val userMapper: UserFirebaseMapper
 ) : UserRepository {
-
-    override suspend fun registerUser(userData: RegistrationData): Result<String> {
-        return try {
-            val result = firebaseService.register(userData)
-            if (result.isSuccess) {
-                Result.success(result.getOrThrow().uid)
-            } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Registration failed"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun login(email: String, password: String): Result<String> {
+        return firebaseService.login(email, password).map { it.uid }
     }
 
-    override suspend fun loginUser(email: String, password: String): Result<String> {
-        return try {
-            val result = firebaseService.login(email, password)
-            if (result.isSuccess) {
-                Result.success(result.getOrThrow().uid)
-            } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Login failed"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun register(registrationData: RegistrationData): Result<String> {
+        return firebaseService.register(registrationData).map { it.uid }
     }
 
-    override fun logoutUser() {
+    override suspend fun logout() {
         firebaseService.logout()
-    }
-
-    override fun getCurrentUserId(): String? {
-        return firebaseService.getCurrentUser()?.uid
     }
 
     override fun isUserLoggedIn(): Boolean {
         return firebaseService.getCurrentUser() != null
     }
 
-    override suspend fun getUserProfile(userId: String): Result<User> {
-        return try {
-            val result = firebaseService.getUserProfile(userId)
-            if (result.isSuccess) {
-                val userData = result.getOrThrow()
-                Result.success(userMapper.mapToUser(userId, userData))
-            } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Failed to get user profile"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override fun getCurrentUserId(): String? {
+        return firebaseService.getCurrentUser()?.uid
     }
 
-    override fun observeUserProfile(userId: String): Flow<User?> = flow {
-        val result = getUserProfile(userId)
-        if (result.isSuccess) {
-            emit(result.getOrThrow())
-        } else {
-            emit(null)
-        }
+    override suspend fun getUserProfile(userId: String): User {
+        return firebaseService.executeFirestoreOperation {
+            val userDoc = firebaseService.getFirestore()
+                .collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            if (!userDoc.exists()) {
+                throw Exception("User not found")
+            }
+
+            val data = userDoc.data ?: throw Exception("User data is null")
+            userMapper.mapToUser(userId, data)
+        }.getOrThrow()
     }
 
     override suspend fun updateUserProfile(userId: String, updates: Map<String, Any>): Result<Unit> {
-        return try {
+        return if (firebaseService.getCurrentUser()?.uid == userId) {
             firebaseService.updateUserProfile(updates)
-        } catch (e: Exception) {
-            Result.failure(e)
+        } else {
+            try {
+                firebaseService.getFirestore().collection("users").document(userId)
+                    .update(updates + ("updatedAt" to java.util.Date().time))
+                    .await()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 
     override suspend fun saveFCMToken(token: String): Result<Unit> {
-        return try {
-            firebaseService.saveUserFCMToken(token)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return firebaseService.saveUserFCMToken(token)
+    }
+
+    override fun getAuthStateFlow(): Flow<FirebaseUser?> {
+        return firebaseService.authStateFlow
+    }
+
+    override fun observeUserProfile(userId: String): kotlinx.coroutines.flow.Flow<User?> {
+        throw NotImplementedError("observeUserProfile is not implemented. Use a callback-based approach if you do not want to use coroutines.")
     }
 }

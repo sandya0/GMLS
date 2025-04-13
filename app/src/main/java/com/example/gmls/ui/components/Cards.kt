@@ -35,12 +35,11 @@ fun StatusCard(
     modifier: Modifier = Modifier,
     contentDescription: String? = null
 ) {
+    val statusCardDescription = contentDescription ?: "Status: $title. $description"
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .semantics {
-                contentDescription?.let { this.contentDescription = it }
-            },
+            .semantics { this.contentDescription = statusCardDescription },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -54,11 +53,13 @@ fun StatusCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Use the val here, do NOT redeclare it inside Row or Box
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(statusColor.copy(alpha = 0.1f)),
+                    .background(statusColor.copy(alpha = 0.1f))
+                    .semantics { this.contentDescription = statusCardDescription },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -113,14 +114,12 @@ fun EmergencyAlertCard(
         EmergencySeverity.MEDIUM -> Pair(Warning, Icons.Filled.Info)
         EmergencySeverity.LOW -> Pair(Info, Icons.Outlined.Info)
     }
-
+    val alertCardDescription = contentDescription ?: "Alert: $title. $message"
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .semantics {
-                contentDescription?.let { this.contentDescription = it }
-            },
+            .semantics { this.contentDescription = alertCardDescription },
         colors = CardDefaults.cardColors(
             containerColor = color.copy(alpha = 0.1f)
         ),

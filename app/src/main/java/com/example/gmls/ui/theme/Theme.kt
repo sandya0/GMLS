@@ -7,6 +7,9 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+// AppTheme enum for theme selection
+enum class AppTheme { LIGHT, DARK, SYSTEM }
+
 // Define Light Theme Colors
 private val LightColorScheme = lightColorScheme(
     primary = Red,
@@ -61,6 +64,24 @@ fun DisasterResponseTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = Typography,
+        shapes = Shapes,
+        content = content
+    )
+}
+
+@Composable
+fun GMLSTheme(
+    appTheme: AppTheme = AppTheme.SYSTEM,
+    content: @Composable () -> Unit
+) {
+    val darkTheme = when (appTheme) {
+        AppTheme.LIGHT -> false
+        AppTheme.DARK -> true
+        AppTheme.SYSTEM -> isSystemInDarkTheme()
+    }
+    MaterialTheme(
+        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
         typography = Typography,
         shapes = Shapes,
         content = content

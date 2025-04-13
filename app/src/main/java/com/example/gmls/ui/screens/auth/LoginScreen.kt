@@ -1,6 +1,5 @@
 package com.example.gmls.ui.screens.auth
 
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -35,6 +34,8 @@ import com.example.gmls.ui.components.TextActionButton
 import com.example.gmls.ui.theme.Black
 import com.example.gmls.ui.theme.Red
 import com.example.gmls.ui.theme.White
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun LoginScreen(
@@ -42,7 +43,8 @@ fun LoginScreen(
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -108,6 +110,19 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Error message
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    color = Red,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = errorMessage },
+                    textAlign = TextAlign.Center
+                )
+            }
+
             // Login Form
             DisasterTextField(
                 value = email,
@@ -148,6 +163,7 @@ fun LoginScreen(
                 TextActionButton(
                     text = "Forgot Password?",
                     onClick = onForgotPassword,
+                    color = Red,
                     contentDescription = "Forgot password button"
                 )
             }
@@ -158,7 +174,12 @@ fun LoginScreen(
             PrimaryButton(
                 text = "Login",
                 onClick = {
-                    if (validateInputs()) {
+                    if (validateInputs(
+                            email,
+                            password,
+                            { emailError = it },
+                            { passwordError = it }
+                        )) {
                         onLogin(email, password)
                     }
                 },
@@ -217,31 +238,26 @@ fun LoginScreen(
     }
 }
 
-private fun LoginScreen.validateInputs(): Boolean {
+private fun validateInputs(
+    email: String,
+    password: String,
+    setEmailError: (String?) -> Unit,
+    setPasswordError: (String?) -> Unit
+): Boolean {
     var isValid = true
 
     if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-        emailError = "Please enter a valid email address"
+        setEmailError("Please enter a valid email address")
         isValid = false
     }
 
     if (password.isEmpty()) {
-        passwordError = "Password cannot be empty"
+        setPasswordError("Password cannot be empty")
         isValid = false
     } else if (password.length < 6) {
-        passwordError = "Password must be at least 6 characters"
+        setPasswordError("Password must be at least 6 characters")
         isValid = false
     }
 
     return isValid
-}
-
-// Preview
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen(
-        onLogin = { _, _ -> },
-        onRegister = { },
-        onForgotPassword = { }
-    )
 }

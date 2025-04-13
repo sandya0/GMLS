@@ -34,26 +34,16 @@ class DisasterViewModel @Inject constructor(
      */
     fun loadDisasters() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-
-            val result = disasterRepository.getAllDisasters()
-
-            if (result.isSuccess) {
-                _uiState.update {
-                    it.copy(
-                        disasters = result.getOrDefault(emptyList()),
-                        filteredDisasters = result.getOrDefault(emptyList()),
-                        isLoading = false,
-                        error = null
-                    )
+            _uiState.update { it.copy(isLoading = true, error = null, success = null) }
+            try {
+                val result = disasterRepository.getAllDisasters()
+                if (result.isSuccess) {
+                    _uiState.update { it.copy(disasters = result.getOrDefault(emptyList()), isLoading = false, success = "Disasters loaded successfully", error = null) }
+                } else {
+                    _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to load disasters", isLoading = false, success = null) }
                 }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to load disasters"
-                    )
-                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message, isLoading = false, success = null) }
             }
         }
     }
@@ -96,40 +86,44 @@ class DisasterViewModel @Inject constructor(
      * Get a specific disaster by ID
      * @param id The disaster ID
      */
-    fun getDisasterById(id: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingDetail = true) }
+    fun getDisasterById(id: String): Disaster? {
+        return _uiState.value.disasters.find { it.id == id }
+    }
 
-            val result = disasterRepository.getDisasterById(id)
-
-            if (result.isSuccess) {
-                _uiState.update {
-                    it.copy(
-                        selectedDisaster = result.getOrNull(),
-                        isLoadingDetail = false,
-                        error = null
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoadingDetail = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to get disaster details"
-                    )
-                }
-            }
+    /**
+     * Get disasters by type
+     * @param type The disaster type to filter by, or null to show all
+     */
+    fun getDisastersByType(type: DisasterType?): List<Disaster> {
+        return if (type == null) {
+            _uiState.value.disasters
+        } else {
+            _uiState.value.disasters.filter { it.type == type }
         }
+    }
+
+    /**
+     * Get disasters by status
+     * @param status The disaster status to filter by
+     */
+    fun getDisastersByStatus(status: Disaster.Status): List<Disaster> {
+        return _uiState.value.disasters.filter { it.status == status }
     }
 
     /**
      * Report a new disaster
      * @param report The disaster report
+     * @param latLng The latitude and longitude (nullable)
      */
-    fun reportDisaster(report: DisasterReport) {
+    fun reportDisaster(report: DisasterReport, latLng: Pair<Double, Double>? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true) }
 
-            val result = disasterRepository.reportDisaster(report)
+            val result = if (latLng != null) {
+                disasterRepository.reportDisaster(report, latLng.first, latLng.second)
+            } else {
+                disasterRepository.reportDisaster(report)
+            }
 
             if (result.isSuccess) {
                 // Refresh the disaster list
@@ -229,6 +223,10 @@ class DisasterViewModel @Inject constructor(
             )
         }
     }
+
+    fun clearMessages() {
+        _uiState.update { it.copy(error = null, success = null) }
+    }
 }
 
 /**
@@ -245,5 +243,6 @@ data class DisasterUiState(
     val isSubmitting: Boolean = false,
     val isUpdating: Boolean = false,
     val submissionSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val success: String? = null
 )

@@ -4,18 +4,25 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.compose.compiler) apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
+    id("com.google.dagger.hilt.android") version "2.48.1" apply false
 }
 
 buildscript {
-
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.3.0") // Use the latest version
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22") // Use the latest version
-        classpath("com.google.gms:google-services:4.4.1") // Add this line
-        classpath("com.google.dagger:hilt-android-gradle-plugin:2.51")
+        classpath(libs.gradle)
+        classpath(libs.kotlin.gradle.plugin)
+        classpath(libs.google.services)
+        classpath(libs.hilt.android.gradle.plugin)
     }
+}
+
+// Remove allprojects block as it's deprecated in Gradle 8.2
+// Instead, use settings.gradle.kts for repository configuration
+
+tasks.register("clean", Delete::class) {
+    delete(layout.buildDirectory)
 }

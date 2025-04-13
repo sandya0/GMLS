@@ -1,10 +1,14 @@
 package com.example.gmls.di
 
 import android.content.Context
+import android.app.Application
+import androidx.room.Room
 import com.example.gmls.data.remote.FirebaseService
 import com.example.gmls.data.remote.LocationService
 import com.example.gmls.domain.model.DisasterFirebaseMapper
 import com.example.gmls.domain.model.UserFirebaseMapper
+import com.example.gmls.data.local.AppDatabase
+import com.example.gmls.data.local.DisasterDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,8 +37,11 @@ object AppModule {
      */
     @Provides
     @Singleton
-    fun provideFirebaseService(disasterMapper: DisasterFirebaseMapper): FirebaseService {
-        return FirebaseService(disasterMapper)
+    fun provideFirebaseService(
+        @ApplicationContext context: Context,
+        disasterMapper: DisasterFirebaseMapper
+    ): FirebaseService {
+        return FirebaseService(context, disasterMapper)
     }
 
     /**
@@ -63,6 +70,15 @@ object AppModule {
     fun provideDisasterFirebaseMapper(): DisasterFirebaseMapper {
         return DisasterFirebaseMapper()
     }
+
+    @Provides
+    @Singleton
+    fun provideAppDatabase(app: Application): AppDatabase =
+        Room.databaseBuilder(app, AppDatabase::class.java, "gmls-db").build()
+
+    @Provides
+    @Singleton
+    fun provideDisasterDao(db: AppDatabase): DisasterDao = db.disasterDao()
 
     // Removed the duplicate provideDisasterRepository method
 }

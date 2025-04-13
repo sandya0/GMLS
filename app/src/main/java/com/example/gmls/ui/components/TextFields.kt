@@ -45,52 +45,28 @@ fun DisasterTextField(
     singleLine: Boolean = true
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
-
+    val errorText = errorMessage ?: "Error"
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             label = { Text(label) },
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .semantics {
                     contentDescription?.let { this.contentDescription = it }
                 },
-            leadingIcon = leadingIcon?.let {
-                { Icon(imageVector = it, contentDescription = null) }
-            },
-            trailingIcon = when {
-                isPassword -> {
-                    {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible)
-                                    Icons.Filled.Visibility
-                                else
-                                    Icons.Filled.VisibilityOff,
-                                contentDescription = if (passwordVisible)
-                                    "Hide password"
-                                else
-                                    "Show password"
-                            )
-                        }
-                    }
+            leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
+            trailingIcon = trailingIcon?.let {
+                if (onTrailingIconClick != null) {
+                    { IconButton(onClick = onTrailingIconClick) { Icon(it, contentDescription = null) } }
+                } else {
+                    { Icon(it, contentDescription = null) }
                 }
-                trailingIcon != null -> {
-                    {
-                        IconButton(onClick = { onTrailingIconClick?.invoke() }) {
-                            Icon(imageVector = trailingIcon, contentDescription = null)
-                        }
-                    }
-                }
-                else -> null
             },
             singleLine = singleLine,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = if (isPassword && !passwordVisible)
-                    KeyboardType.Password
-                else
-                    keyboardType,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
                 imeAction = imeAction
             ),
             keyboardActions = KeyboardActions(
@@ -115,13 +91,14 @@ fun DisasterTextField(
             ),
             isError = isError
         )
-
         AnimatedVisibility(visible = isError && !errorMessage.isNullOrEmpty()) {
             Text(
-                text = errorMessage ?: "",
+                text = errorText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                modifier = Modifier
+                    .padding(start = 16.dp, top = 4.dp)
+                    .semantics { this.contentDescription = errorText }
             )
         }
     }

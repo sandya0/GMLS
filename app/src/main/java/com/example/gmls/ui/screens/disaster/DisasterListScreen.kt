@@ -25,6 +25,9 @@ import com.example.gmls.domain.model.DisasterType
 import com.example.gmls.ui.components.DisasterReportFAB
 import com.example.gmls.ui.components.DisasterTypeChip
 import com.example.gmls.ui.theme.Red
+import com.example.gmls.ui.components.GlobalSnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +37,9 @@ fun DisasterListScreen(
     onBackClick: () -> Unit,
     onReportDisaster: () -> Unit = {},
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
+    successMessage: String? = null
 ) {
     var selectedDisasterType by remember { mutableStateOf<DisasterType?>(null) }
     var searchQuery by remember { mutableStateOf("") }
@@ -61,6 +66,19 @@ fun DisasterListScreen(
     }
 
     val disasterTypes = remember { DisasterType.values().toList() }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Show snackbar for error or success
+    LaunchedEffect(errorMessage, successMessage) {
+        errorMessage?.let {
+            coroutineScope.launch { snackbarHostState.showSnackbar(it) }
+        }
+        successMessage?.let {
+            coroutineScope.launch { snackbarHostState.showSnackbar(it) }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -96,7 +114,8 @@ fun DisasterListScreen(
                 onClick = onReportDisaster
             )
         },
-        modifier = modifier
+        modifier = modifier,
+        snackbarHost = { GlobalSnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier

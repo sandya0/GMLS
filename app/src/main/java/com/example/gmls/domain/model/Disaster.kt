@@ -13,6 +13,7 @@ data class Disaster(
     val title: String,
     val description: String,
     val location: String,
+    val useCurrentLocation: Boolean,
     val type: DisasterType,
     val timestamp: Long,
     val affectedCount: Int,
@@ -91,18 +92,27 @@ class DisasterFirebaseMapper {
     fun mapToDisaster(id: String, data: Map<String, Any>): Disaster {
         return Disaster(
             id = id,
-            title = data["title"] as String,
-            description = data["description"] as String,
-            location = data["location"] as String,
-            type = DisasterType.valueOf(data["type"] as String),
-            timestamp = data["timestamp"] as Long,
-            affectedCount = (data["affectedCount"] as Number).toInt(),
-            images = (data["images"] as? List<String>) ?: emptyList(),
-            status = Disaster.Status.valueOf(data["status"] as String),
-            latitude = (data["latitude"] as Number).toDouble(),
-            longitude = (data["longitude"] as Number).toDouble(),
-            reportedBy = data["reportedBy"] as String,
-            updatedAt = (data["updatedAt"] as? Long) ?: (data["timestamp"] as Long)
+            title = data["title"] as? String ?: "Untitled",
+            description = data["description"] as? String ?: "",
+            location = data["location"] as? String ?: "",
+            useCurrentLocation = data["useCurrentLocation"] as? Boolean ?: false,
+            type = try {
+                DisasterType.valueOf(data["type"] as? String ?: "OTHER")
+            } catch (e: Exception) {
+                DisasterType.OTHER
+            },
+            timestamp = (data["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+            affectedCount = (data["affectedCount"] as? Number)?.toInt() ?: 0,
+            images = (data["images"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
+            status = try {
+                Disaster.Status.valueOf(data["status"] as? String ?: "REPORTED")
+            } catch (e: Exception) {
+                Disaster.Status.REPORTED
+            },
+            latitude = (data["latitude"] as? Number)?.toDouble() ?: 0.0,
+            longitude = (data["longitude"] as? Number)?.toDouble() ?: 0.0,
+            reportedBy = data["reportedBy"] as? String ?: "",
+            updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: (data["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis()
         )
     }
 
@@ -111,6 +121,7 @@ class DisasterFirebaseMapper {
             "title" to disaster.title,
             "description" to disaster.description,
             "location" to disaster.location,
+            "useCurrentLocation" to disaster.useCurrentLocation,
             "type" to disaster.type.name,
             "timestamp" to disaster.timestamp,
             "affectedCount" to disaster.affectedCount,

@@ -20,10 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.disasterresponse.domain.model.Disaster
-import com.disasterresponse.domain.model.DisasterType
-import com.disasterresponse.domain.model.SeverityLevel
-import com.disasterresponse.ui.theme.Red
+import com.example.gmls.domain.model.Disaster
+import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.SeverityLevel
+import com.example.gmls.ui.theme.Red
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,10 +46,10 @@ fun DisasterDetailScreen(
             TopAppBar(
                 title = { Text(disaster.title) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.semantics { contentDescription = "Go back" }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = null
                         )
                     }
                 },
@@ -61,11 +63,12 @@ fun DisasterDetailScreen(
             FloatingActionButton(
                 onClick = onMapClick,
                 containerColor = Red,
-                contentColor = Color.White
+                contentColor = Color.White,
+                modifier = Modifier.semantics { contentDescription = "View on map" }
             ) {
                 Icon(
                     imageVector = Icons.Default.Map,
-                    contentDescription = "View on map"
+                    contentDescription = null
                 )
             }
         },

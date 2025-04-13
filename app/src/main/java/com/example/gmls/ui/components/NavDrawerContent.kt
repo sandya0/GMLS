@@ -18,6 +18,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.gmls.ui.navigation.Screen
 import com.example.gmls.ui.theme.Red
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 /**
  * Navigation drawer content component
@@ -48,12 +52,27 @@ fun NavDrawerContent(
         NavigationItem(
             title = "Report Disaster",
             icon = Icons.Filled.AddAlert,
-            route = Screen.DisasterReport.route
+            route = Screen.ReportDisaster.route
         ),
         NavigationItem(
             title = "Profile",
             icon = Icons.Filled.Person,
             route = Screen.Profile.route
+        ),
+        NavigationItem(
+            title = "Resources",
+            icon = Icons.Filled.MenuBook,
+            route = "resources"
+        ),
+        NavigationItem(
+            title = "Settings",
+            icon = Icons.Filled.Settings,
+            route = "settings"
+        ),
+        NavigationItem(
+            title = "Emergency",
+            icon = Icons.Filled.Warning,
+            route = "emergency"
         )
     )
 
@@ -107,7 +126,10 @@ fun NavDrawerContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Divider()
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -122,7 +144,10 @@ fun NavDrawerContent(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Divider()
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -131,13 +156,13 @@ fun NavDrawerContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onLogout() }
-                .padding(16.dp),
+                .padding(16.dp)
+                .semantics { this.contentDescription = "Logout" },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Filled.Logout,
-                contentDescription = "Logout",
-                tint = MaterialTheme.colorScheme.error
+                imageVector = Icons.AutoMirrored.Filled.Logout,
+                contentDescription = "Logout"
             )
 
             Spacer(modifier = Modifier.width(24.dp))
@@ -179,7 +204,8 @@ fun NavDrawerItem(
             .clip(RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp))
             .background(backgroundColor)
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(16.dp)
+            .semantics { this.contentDescription = item.title },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

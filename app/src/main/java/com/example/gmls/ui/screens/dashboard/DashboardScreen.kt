@@ -3,6 +3,7 @@ package com.example.gmls.ui.screens.dashboard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,11 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gmls.domain.model.Disaster
 import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.User
 import com.example.gmls.ui.components.DisasterReportFAB
 import com.example.gmls.ui.components.DisasterTypeChip
 import com.example.gmls.ui.components.EmergencyAlertCard
@@ -33,257 +37,227 @@ import com.example.gmls.ui.theme.Info
 import com.example.gmls.ui.theme.Red
 import com.example.gmls.ui.theme.Success
 import com.example.gmls.ui.theme.Warning
+import com.example.gmls.ui.viewmodels.ProfileViewModel
 import kotlinx.coroutines.launch
 import java.util.*
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     disasters: List<Disaster>,
     onDisasterClick: (Disaster) -> Unit,
-    onReportDisaster: () -> Unit,
-    onSearchClick: () -> Unit,
-    onFilterChange: (DisasterType) -> Unit,
-    onNotificationsClick: () -> Unit,
     onProfileClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    onMenuClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onNotificationsClick: () -> Unit,
+    onReportDisaster: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
+    val profileState by viewModel.profileState.collectAsState()
+    val user = profileState.user
     var selectedDisasterType by remember { mutableStateOf<DisasterType?>(null) }
-
     val filteredDisasters = remember(disasters, selectedDisasterType) {
-        if (selectedDisasterType == null) {
-            disasters
-        } else {
-            disasters.filter { it.type == selectedDisasterType }
-        }
+        if (selectedDisasterType == null) disasters else disasters.filter { it.type == selectedDisasterType }
     }
-
     val disasterTypes = remember { DisasterType.values().toList() }
 
     Scaffold(
         topBar = {
             DashboardTopAppBar(
-                onMenuClick = { scope.launch { drawerState.open() } },
-                onSearchClick = onSearchClick,
+                onMenuClick = onMenuClick,
+                onSearchClick = {},
                 onNotificationsClick = onNotificationsClick,
                 onProfileClick = onProfileClick
             )
         },
         floatingActionButton = {
-            DisasterReportFAB(
-                onClick = onReportDisaster
+            ExtendedFloatingActionButton(
+                text = { Text("Report Disaster") },
+                icon = { Icon(Icons.Default.Add, contentDescription = "Report Disaster") },
+                onClick = onReportDisaster,
+                containerColor = Red,
+                contentColor = Color.White
             )
-        },
-        modifier = modifier
+        }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
+                .padding(16.dp)
         ) {
-            // Main content
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Profile Section as Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.08f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                // Emergency alert (if any)
-                item {
-                    EmergencyAlertCard(
-                        title = "Flood Warning",
-                        message = "Heavy rainfall expected in your area. Stay vigilant and prepare for possible evacuation.",
-                        severity = EmergencySeverity.HIGH,
-                        timestamp = "10 min ago",
-                        onDismiss = { /* TODO: Handle dismiss */ }
-                    )
-                }
-
-                // User Status Card
-                item {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .semantics { contentDescription = "Profile section. Tap to view or edit profile." }
+                        .clickable(onClick = onProfileClick)
+                ) {
+                    // Profile Picture
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(CircleShape)
-                                        .background(Red),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "JD",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = Color.White
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Column {
-                                    Text(
-                                        text = "Welcome back,",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                    )
-                                    Text(
-                                        text = "John Doe",
-                                        style = MaterialTheme.typography.headlineMedium
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                IconButton(
-                                    onClick = onProfileClick,
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Settings,
-                                        contentDescription = "Settings"
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = "Your Disaster Response Status",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                StatusIndicator(
-                                    count = 3,
-                                    label = "Reported",
-                                    color = Info,
-                                    icon = Icons.Filled.Report,
-                                    modifier = Modifier.weight(1f)
-                                )
-
-                                StatusIndicator(
-                                    count = 7,
-                                    label = "Assisted",
-                                    color = Success,
-                                    icon = Icons.Filled.VolunteerActivism,
-                                    modifier = Modifier.weight(1f)
-                                )
-
-                                StatusIndicator(
-                                    count = 2,
-                                    label = "Near You",
-                                    color = Warning,
-                                    icon = Icons.Filled.LocationOn,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Disaster type filter
-                item {
-                    Column {
                         Text(
-                            text = "Filter by Disaster Type",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            text = user?.fullName?.take(2)?.uppercase() ?: "U",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            item {
-                                DisasterTypeChip(
-                                    text = "All",
-                                    selected = selectedDisasterType == null,
-                                    onClick = {
-                                        selectedDisasterType = null
-                                        onFilterChange(DisasterType.EARTHQUAKE) // Placeholder, since All isn't a DisasterType
-                                    }
-                                )
-                            }
-
-                            items(disasterTypes) { type ->
-                                DisasterTypeChip(
-                                    text = type.displayName,
-                                    selected = selectedDisasterType == type,
-                                    onClick = {
-                                        selectedDisasterType = type
-                                        onFilterChange(type)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Recent disasters section
-                item {
-                    Text(
-                        text = "Recent Disasters",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                // Disaster list
-                if (filteredDisasters.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No disasters reported in this category",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                textAlign = TextAlign.Center
+                        // Badge for verification
+                        if (user != null) {
+                            Icon(
+                                imageVector = Icons.Outlined.VerifiedUser,
+                                contentDescription = "Verified profile",
+                                tint = Success,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .align(Alignment.BottomEnd)
                             )
                         }
                     }
-                } else {
-                    items(filteredDisasters) { disaster ->
-                        DisasterCard(
-                            disaster = disaster,
-                            onClick = { onDisasterClick(disaster) }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Welcome back,",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = user?.fullName ?: "User",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    IconButton(onClick = onLogoutClick, modifier = Modifier.semantics { contentDescription = "Logout" }) {
+                        Icon(Icons.Default.Logout, contentDescription = "Logout", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
-
-            // Loading indicator
-            AnimatedVisibility(
-                visible = isLoading,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.fillMaxSize()
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            // Status indicators as cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.7f)),
-                    contentAlignment = Alignment.Center
+                DashboardStatusCard(
+                    title = "Reported",
+                    count = disasters.count { it.status.name == "REPORTED" },
+                    icon = Icons.Default.Flag,
+                    color = Warning,
+                    tooltip = "Disasters you have reported.",
+                    modifier = Modifier.weight(1f)
+                )
+                DashboardStatusCard(
+                    title = "Assisted",
+                    count = disasters.count { it.status.name == "RESOLVED" },
+                    icon = Icons.Default.CheckCircle,
+                    color = Success,
+                    tooltip = "Disasters you have assisted.",
+                    modifier = Modifier.weight(1f)
+                )
+                DashboardStatusCard(
+                    title = "Near You",
+                    count = disasters.count { it.status.name == "IN_PROGRESS" },
+                    icon = Icons.Default.LocationOn,
+                    color = Info,
+                    tooltip = "Disasters near your location.",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            // Emergency alert if there's a flood disaster
+            disasters.firstOrNull { it.type.name == "FLOOD" }?.let { floodDisaster ->
+                EmergencyAlertCard(
+                    title = floodDisaster.title,
+                    message = floodDisaster.description,
+                    severity = EmergencySeverity.HIGH,
+                    timestamp = floodDisaster.formattedTimestamp,
+                    onDismiss = { /* TODO: Handle dismiss */ }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            // Disaster type filter
+            Text(
+                text = "Filter by Disaster Type",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    DisasterTypeChip(
+                        text = "All",
+                        selected = selectedDisasterType == null,
+                        onClick = { selectedDisasterType = null }
+                    )
+                }
+                items(disasterTypes) { type ->
+                    DisasterTypeChip(
+                        text = type.name,
+                        selected = selectedDisasterType == type,
+                        onClick = { selectedDisasterType = type }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            // Recent disasters
+            Text(
+                text = "Recent Disasters",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            if (filteredDisasters.isEmpty()) {
+                Text(
+                    text = "No disasters reported in this category",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    CircularProgressIndicator(color = Red)
+                    items(filteredDisasters) { disaster ->
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn(animationSpec = tween(500)),
+                            exit = fadeOut(animationSpec = tween(300))
+                        ) {
+                            DisasterCard(
+                                disaster = disaster,
+                                onClick = { onDisasterClick(disaster) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -349,43 +323,33 @@ fun DashboardTopAppBar(
 }
 
 @Composable
-fun StatusIndicator(
+fun DashboardStatusCard(
+    title: String,
     count: Int,
-    label: String,
-    color: Color,
     icon: ImageVector,
+    color: Color,
+    tooltip: String,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Card(
         modifier = modifier
+            .padding(horizontal = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(12.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(Icons.Outlined.Info, contentDescription = tooltip, tint = color, modifier = Modifier.size(16.dp))
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = color)
+            Text(text = count.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-        )
     }
 }
 

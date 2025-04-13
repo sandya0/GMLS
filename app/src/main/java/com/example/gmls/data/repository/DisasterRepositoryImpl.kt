@@ -60,6 +60,14 @@ class DisasterRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun reportDisaster(report: DisasterReport, latitude: Double, longitude: Double): Result<String> {
+        return try {
+            firebaseService.reportDisaster(report, latitude, longitude)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateDisasterStatus(disasterId: String, status: Disaster.Status): Result<Unit> {
         return firebaseService.updateDisasterStatus(disasterId, status)
     }

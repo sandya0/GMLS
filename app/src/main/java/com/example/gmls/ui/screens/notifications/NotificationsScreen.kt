@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -107,25 +109,25 @@ fun NotificationsScreen(
             TopAppBar(
                 title = { Text("Notifications") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.semantics { contentDescription = "Go back" }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = null
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showUnreadOnly = !showUnreadOnly }) {
+                    IconButton(onClick = { showUnreadOnly = !showUnreadOnly }, modifier = Modifier.semantics { contentDescription = if (showUnreadOnly) "Show all notifications" else "Show unread only notifications" }) {
                         Icon(
                             imageVector = if (showUnreadOnly) Icons.Default.CheckCircle else Icons.Default.Circle,
-                            contentDescription = if (showUnreadOnly) "Show all" else "Show unread only"
+                            contentDescription = null
                         )
                     }
 
-                    IconButton(onClick = { /* Mark all as read */ }) {
+                    IconButton(onClick = { /* Mark all as read */ }, modifier = Modifier.semantics { contentDescription = "Mark all as read" }) {
                         Icon(
                             imageVector = Icons.Default.MarkEmailRead,
-                            contentDescription = "Mark all as read"
+                            contentDescription = null
                         )
                     }
                 }
@@ -226,7 +228,8 @@ fun NotificationItem(
     Card(
         onClick = onClick,
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .semantics { contentDescription = "Notification: ${notification.title}. ${notification.message}" },
         colors = CardDefaults.cardColors(
             containerColor = if (!notification.read) {
                 color.copy(alpha = 0.05f)
@@ -248,7 +251,7 @@ fun NotificationItem(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = notification.type.name,
                     tint = color,
                     modifier = Modifier.size(24.dp)
                 )
