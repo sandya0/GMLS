@@ -11,7 +11,7 @@ import javax.inject.Inject
 class GetUserProfileUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(userId: String): Result<User> {
+    suspend operator fun invoke(userId: String): User {
         return userRepository.getUserProfile(userId)
     }
 }
@@ -33,7 +33,8 @@ class ObserveUserProfileUseCase @Inject constructor(
 class UpdateUserProfileUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(userId: String, updates: Map<String, Any>): Result<Unit> {
+    suspend operator fun invoke(updates: Map<String, Any>): Result<Unit> {
+        val userId = userRepository.getCurrentUserId() ?: return Result.failure(Exception("User not logged in"))
         return userRepository.updateUserProfile(userId, updates)
     }
 }
@@ -46,5 +47,19 @@ class SaveFCMTokenUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(token: String): Result<Unit> {
         return userRepository.saveFCMToken(token)
+    }
+}
+
+class GetCurrentUserUseCase @Inject constructor(
+    private val userRepository: UserRepository
+) {
+    suspend operator fun invoke(): Result<User> {
+        return try {
+            val userId = userRepository.getCurrentUserId() 
+                ?: return Result.failure(Exception("No user logged in"))
+            Result.success(userRepository.getUserProfile(userId))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

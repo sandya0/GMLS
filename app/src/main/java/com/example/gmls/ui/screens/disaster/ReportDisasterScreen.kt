@@ -47,12 +47,14 @@ data class DisasterReport(
     val type: DisasterType,
     val affectedCount: Int,
     val images: List<Uri>,
-    val timestamp: Date = Date()
+    val timestamp: Date = Date(),
+    val reportedBy: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportDisasterScreen(
+    currentUserId: String, // Add this parameter
     onSubmit: (DisasterReport) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
@@ -434,7 +436,8 @@ fun ReportDisasterScreen(
                                 useCurrentLocation = useCurrentLocation,
                                 type = selectedType!!,
                                 affectedCount = affectedCount.toIntOrNull() ?: 0,
-                                images = imageUris
+                                images = imageUris,
+                                reportedBy = currentUserId // Add this
                             )
                             onSubmit(report)
                         }
@@ -502,13 +505,4 @@ private fun validateInputs(
     }
 
     return isValid
-}
-
-// Preview function
-@Composable
-fun ReportDisasterScreenPreview() {
-    ReportDisasterScreen(
-        onSubmit = {},
-        onClose = {}
-    )
 }

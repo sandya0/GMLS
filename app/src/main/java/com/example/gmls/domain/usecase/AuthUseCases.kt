@@ -11,7 +11,7 @@ class LoginUserUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(email: String, password: String): Result<String> {
-        return userRepository.loginUser(email, password)
+        return userRepository.login(email, password)
     }
 }
 
@@ -22,7 +22,7 @@ class RegisterUserUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(userData: RegistrationData): Result<String> {
-        return userRepository.registerUser(userData)
+        return userRepository.register(userData)
     }
 }
 
@@ -32,8 +32,8 @@ class RegisterUserUseCase @Inject constructor(
 class LogoutUserUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    operator fun invoke() {
-        userRepository.logoutUser()
+    suspend operator fun invoke() {
+        userRepository.logout()
     }
 }
 

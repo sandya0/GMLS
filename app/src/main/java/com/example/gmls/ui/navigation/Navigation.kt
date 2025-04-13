@@ -5,18 +5,24 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -27,6 +33,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.gmls.domain.model.Disaster
 import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.User
 import com.example.gmls.ui.components.NavDrawerContent
 import com.example.gmls.ui.screens.auth.LoginScreen
 import com.example.gmls.ui.screens.auth.RegistrationData
@@ -34,10 +41,13 @@ import com.example.gmls.ui.screens.auth.RegistrationScreen
 import com.example.gmls.ui.screens.dashboard.DashboardScreen
 import com.example.gmls.ui.screens.disaster.DisasterDetailScreen
 import com.example.gmls.ui.screens.disaster.DisasterListScreen
-import com.example.gmls.ui.screens.disaster.DisasterReport
 import com.example.gmls.ui.screens.disaster.ReportDisasterScreen
 import com.example.gmls.ui.screens.map.MapScreen
 import com.example.gmls.ui.screens.profile.ProfileScreen
+import com.example.gmls.ui.viewmodels.AuthState
+import com.example.gmls.ui.viewmodels.AuthViewModel
+import com.example.gmls.ui.viewmodels.DisasterViewModel
+import com.example.gmls.ui.viewmodels.ProfileViewModel
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
@@ -45,19 +55,12 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object Dashboard : Screen("dashboard")
     object DisasterList : Screen("disaster_list")
-    object DisasterDetail : Screen("disaster_detail/{disasterId}")
-    object DisasterReport : Screen("disaster_report")
+    object DisasterDetail : Screen("disaster_detail/{disasterId}") {
+        fun createRoute(disasterId: String) = "disaster_detail/$disasterId"
+    }
+    object ReportDisaster : Screen("report_disaster")
     object Map : Screen("map")
     object Profile : Screen("profile")
-
-    fun createRoute(vararg params: String): String {
-        return buildString {
-            append(route)
-            params.forEach { param ->
-                route.replace("{$param}", param)
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
@@ -65,56 +68,32 @@ sealed class Screen(val route: String) {
 fun DisasterResponseNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Login.route,
-    isAuthenticated: Boolean = false,
-    onLogin: (email: String, password: String) -> Unit,
-    onRegister: (RegistrationData) -> Unit,
-    onDisasterReport: (DisasterReport) -> Unit,
-    onLogout: () -> Unit
+    authViewModel: AuthViewModel = hiltViewModel(),
+    disasterViewModel: DisasterViewModel = hiltViewModel()
 ) {
-    // Mock data for demonstration
-    val disasters = remember {
-        mutableListOf(
-            Disaster(
-                id = "1",
-                title = "Flash Flood in Jakarta",
-                description = "Heavy rainfall has caused flash flooding in Jakarta. Several streets are submerged and some residents have been evacuated.",
-                location = "Jakarta, Indonesia",
-                type = DisasterType.FLOOD,
-                timestamp = System.currentTimeMillis(),
-                affectedCount = 250,
-                images = listOf(),
-                status = Disaster.Status.VERIFIED,
-                latitude = -6.2088,
-                longitude = 106.8456
-            ),
-            Disaster(
-                id = "2",
-                title = "Earthquake in Bali",
-                description = "A magnitude 5.6 earthquake struck Bali. Some buildings have reported minor damage.",
-                location = "Bali, Indonesia",
-                type = DisasterType.EARTHQUAKE,
-                timestamp = System.currentTimeMillis() - 86400000, // 1 day ago
-                affectedCount = 100,
-                images = listOf(),
-                status = Disaster.Status.IN_PROGRESS,
-                latitude = -8.4095,
-                longitude = 115.1889
-            ),
-            Disaster(
-                id = "3",
-                title = "Landslide in West Java",
-                description = "Heavy rain has triggered a landslide in West Java. Roads are blocked and some villages are cut off.",
-                location = "West Java, Indonesia",
-                type = DisasterType.LANDSLIDE,
-                timestamp = System.currentTimeMillis() - 172800000, // 2 days ago
-                affectedCount = 50,
-                images = listOf(),
-                status = Disaster.Status.RESOLVED,
-                latitude = -6.9175,
-                longitude = 107.6191
-            )
-        )
+    val authState by authViewModel.authState.collectAsState()
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val disasterState by disasterViewModel.uiState.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
+
+    // Handle authentication state changes
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> {
+                navController.navigate(Screen.Dashboard.route) {
+                    popUpTo(Screen.Login.route) { inclusive = true }
+                }
+            }
+            is AuthState.Unauthenticated -> {
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(Screen.Dashboard.route) { inclusive = true }
+                }
+            }
+            is AuthState.Error -> {
+                // Error is handled in the respective screens
+            }
+            else -> {}
+        }
     }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -139,20 +118,18 @@ fun DisasterResponseNavHost(
                     scope.launch {
                         drawerState.close()
                     }
-                    onLogout()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(navController.graph.id) {
-                            inclusive = true
-                        }
-                    }
+                    authViewModel.logout()
                 }
             )
         },
-        gesturesEnabled = isAuthenticated && drawerState.isOpen
+        gesturesEnabled = isLoggedIn && drawerState.isOpen
     ) {
         NavHost(
             navController = navController,
-            startDestination = if (isAuthenticated) Screen.Dashboard.route else Screen.Login.route,
+            startDestination = when (authState) {
+                is AuthState.Authenticated -> Screen.Dashboard.route
+                else -> Screen.Login.route
+            },
             modifier = modifier
         ) {
             // Auth screens
@@ -163,17 +140,16 @@ fun DisasterResponseNavHost(
             ) {
                 LoginScreen(
                     onLogin = { email, password ->
-                        onLogin(email, password)
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
+                        authViewModel.login(email, password)
                     },
                     onRegister = {
                         navController.navigate(Screen.Register.route)
                     },
                     onForgotPassword = {
                         // Handle forgot password
-                    }
+                    },
+                    isLoading = authState is AuthState.Loading,
+                    errorMessage = if (authState is AuthState.Error) (authState as AuthState.Error).message else null
                 )
             }
 
@@ -184,15 +160,27 @@ fun DisasterResponseNavHost(
             ) {
                 RegistrationScreen(
                     onRegister = { registrationData ->
-                        onRegister(registrationData)
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
+                        authViewModel.register(registrationData)
                     },
                     onNavigateBack = {
                         navController.popBackStack()
-                    }
+                    },
+                    isLoading = authState is AuthState.Loading
                 )
+
+                // Show error dialog if registration fails
+                if (authState is AuthState.Error) {
+                    AlertDialog(
+                        onDismissRequest = { authViewModel.resetAuthState() },
+                        title = { Text("Registration Failed") },
+                        text = { Text((authState as AuthState.Error).message) },
+                        confirmButton = {
+                            TextButton(onClick = { authViewModel.resetAuthState() }) {
+                                Text("OK")
+                            }
+                        }
+                    )
+                }
             }
 
             // Main screens
@@ -201,23 +189,22 @@ fun DisasterResponseNavHost(
                 enterTransition = { slideIntoContainer(towards = AnimatedContentTransitionScope.SlideDirection.Start, animationSpec = tween(300)) },
                 exitTransition = { slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.End, animationSpec = tween(300)) }
             ) {
+                val profileViewModel: ProfileViewModel = hiltViewModel()
+                val profileState by profileViewModel.profileState.collectAsState()
+                
                 DashboardScreen(
-                    disasters = disasters,
+                    disasters = disasterState.disasters,
                     onDisasterClick = { disaster ->
-                        navController.navigate("disaster_detail/${disaster.id}")
-                    },
-                    onReportDisaster = {
-                        navController.navigate(Screen.DisasterReport.route)
-                    },
-                    onSearchClick = {
-                        // Handle search
-                    },
-                    onFilterChange = { /* Handle filter change */ },
-                    onNotificationsClick = {
-                        // Handle notifications
+                        navController.navigate(Screen.DisasterDetail.createRoute(disaster.id))
                     },
                     onProfileClick = {
                         navController.navigate(Screen.Profile.route)
+                    },
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    },
+                    onLogoutClick = {
+                        authViewModel.logout()
                     }
                 )
             }
@@ -228,13 +215,17 @@ fun DisasterResponseNavHost(
                 exitTransition = { slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.End, animationSpec = tween(300)) }
             ) {
                 DisasterListScreen(
-                    disasters = disasters,
+                    disasters = disasterState.disasters,
                     onDisasterClick = { disaster ->
-                        navController.navigate("disaster_detail/${disaster.id}")
+                        navController.navigate(Screen.DisasterDetail.createRoute(disaster.id))
                     },
                     onBackClick = {
                         navController.popBackStack()
-                    }
+                    },
+                    onReportDisaster = {
+                        navController.navigate(Screen.ReportDisaster.route)
+                    },
+                    isLoading = disasterState.isLoading
                 )
             }
 
@@ -243,8 +234,8 @@ fun DisasterResponseNavHost(
                 enterTransition = { slideIntoContainer(towards = AnimatedContentTransitionScope.SlideDirection.Start, animationSpec = tween(300)) },
                 exitTransition = { slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.End, animationSpec = tween(300)) }
             ) { backStackEntry ->
-                val disasterId = backStackEntry.arguments?.getString("disasterId")
-                val disaster = disasters.find { it.id == disasterId }
+                val disasterId = backStackEntry.arguments?.getString("disasterId") ?: ""
+                val disaster = disasterViewModel.getDisasterById(disasterId)
 
                 if (disaster != null) {
                     DisasterDetailScreen(
@@ -260,29 +251,14 @@ fun DisasterResponseNavHost(
             }
 
             composable(
-                route = Screen.DisasterReport.route,
+                route = Screen.ReportDisaster.route,
                 enterTransition = { slideIntoContainer(towards = AnimatedContentTransitionScope.SlideDirection.Start, animationSpec = tween(300)) },
                 exitTransition = { slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.End, animationSpec = tween(300)) }
             ) {
                 ReportDisasterScreen(
+                    currentUserId = currentUser?.id ?: "",
                     onSubmit = { report ->
-                        onDisasterReport(report)
-                        // Add the new disaster to our mock list
-                        disasters.add(
-                            Disaster(
-                                id = (disasters.size + 1).toString(),
-                                title = report.title,
-                                description = report.description,
-                                location = report.location,
-                                type = report.type,
-                                timestamp = System.currentTimeMillis(),
-                                affectedCount = report.affectedCount,
-                                images = emptyList(), // In a real app, would upload these images
-                                status = Disaster.Status.REPORTED,
-                                latitude = 0.0, // Would get real coordinates in a real app
-                                longitude = 0.0
-                            )
-                        )
+                        disasterViewModel.reportDisaster(report)
                         navController.popBackStack()
                     },
                     onClose = {
@@ -297,15 +273,15 @@ fun DisasterResponseNavHost(
                 exitTransition = { slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.End, animationSpec = tween(300)) }
             ) {
                 MapScreen(
-                    disasters = disasters,
+                    disasters = disasterState.disasters,
                     onDisasterClick = { disaster ->
-                        navController.navigate("disaster_detail/${disaster.id}")
+                        navController.navigate(Screen.DisasterDetail.createRoute(disaster.id))
                     },
                     onBackClick = {
                         navController.popBackStack()
                     },
-                    onFilterChange = {
-                        // Handle filter change
+                    onFilterChange = { type ->
+                        disasterViewModel.filterByType(type)
                     }
                 )
             }
@@ -320,13 +296,14 @@ fun DisasterResponseNavHost(
                         navController.popBackStack()
                     },
                     onLogout = {
-                        onLogout()
+                        authViewModel.logout()
                         navController.navigate(Screen.Login.route) {
-                            popUpTo(navController.graph.id) {
+                            popUpTo(navController.graph.startDestinationId) {
                                 inclusive = true
                             }
                         }
-                    }
+                    },
+                    user = currentUser
                 )
             }
         }
@@ -334,9 +311,9 @@ fun DisasterResponseNavHost(
 }
 
 @Composable
-private fun currentRoute(navController: NavController): String? {
+private fun currentRoute(navController: NavController): String {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    return navBackStackEntry?.destination?.route
+    return navBackStackEntry?.destination?.route ?: Screen.Dashboard.route
 }
 
 @Composable

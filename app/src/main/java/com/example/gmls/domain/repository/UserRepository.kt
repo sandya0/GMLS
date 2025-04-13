@@ -2,6 +2,7 @@ package com.example.gmls.domain.repository
 
 import com.example.gmls.domain.model.User
 import com.example.gmls.ui.screens.auth.RegistrationData
+import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -12,18 +13,18 @@ interface UserRepository {
      * Register a new user
      * @return User ID if successful
      */
-    suspend fun registerUser(userData: RegistrationData): Result<String>
+    suspend fun register(registrationData: RegistrationData): Result<String>
 
     /**
      * Login a user with email and password
      * @return User ID if successful
      */
-    suspend fun loginUser(email: String, password: String): Result<String>
+    suspend fun login(email: String, password: String): Result<String>
 
     /**
      * Logout the current user
      */
-    fun logoutUser()
+    suspend fun logout()
 
     /**
      * Get the current logged-in user ID
@@ -42,7 +43,7 @@ interface UserRepository {
      * @param userId The ID of the user
      * @return User data if successful
      */
-    suspend fun getUserProfile(userId: String): Result<User>
+    suspend fun getUserProfile(userId: String): User
 
     /**
      * Observe changes to a user's profile
@@ -63,4 +64,6 @@ interface UserRepository {
      * @param token The FCM token
      */
     suspend fun saveFCMToken(token: String): Result<Unit>
+
+    fun getAuthStateFlow(): Flow<FirebaseUser?>
 }

@@ -1,6 +1,5 @@
 package com.example.gmls.ui.screens.auth
 
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,7 +41,8 @@ fun LoginScreen(
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -108,6 +108,17 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Error message
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    color = Red,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+
             // Login Form
             DisasterTextField(
                 value = email,
@@ -158,7 +169,12 @@ fun LoginScreen(
             PrimaryButton(
                 text = "Login",
                 onClick = {
-                    if (validateInputs()) {
+                    if (validateInputs(
+                            email,
+                            password,
+                            { emailError = it },
+                            { passwordError = it }
+                        )) {
                         onLogin(email, password)
                     }
                 },
@@ -217,31 +233,26 @@ fun LoginScreen(
     }
 }
 
-private fun LoginScreen.validateInputs(): Boolean {
+private fun validateInputs(
+    email: String,
+    password: String,
+    setEmailError: (String?) -> Unit,
+    setPasswordError: (String?) -> Unit
+): Boolean {
     var isValid = true
 
     if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-        emailError = "Please enter a valid email address"
+        setEmailError("Please enter a valid email address")
         isValid = false
     }
 
     if (password.isEmpty()) {
-        passwordError = "Password cannot be empty"
+        setPasswordError("Password cannot be empty")
         isValid = false
     } else if (password.length < 6) {
-        passwordError = "Password must be at least 6 characters"
+        setPasswordError("Password must be at least 6 characters")
         isValid = false
     }
 
     return isValid
-}
-
-// Preview
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen(
-        onLogin = { _, _ -> },
-        onRegister = { },
-        onForgotPassword = { }
-    )
 }

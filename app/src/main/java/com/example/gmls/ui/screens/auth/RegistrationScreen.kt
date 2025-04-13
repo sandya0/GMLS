@@ -1,6 +1,9 @@
 package com.example.gmls.ui.screens.auth
 
-import androidx.compose.animation.AnimatedVisibility
+import android.app.DatePickerDialog
+import android.content.Context
+import android.widget.DatePicker
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,12 +14,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.gmls.ui.components.*
 import com.example.gmls.ui.theme.Red
+import java.text.SimpleDateFormat
 import java.util.*
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.Period
 
 data class RegistrationData(
     val fullName: String = "",
@@ -78,7 +86,7 @@ fun RegistrationScreen(
 
         // Progress indicator
         LinearProgressIndicator(
-            progress = { (currentPage + 1) / 4f }, // 4 pages total
+            progress = { (currentPage + 1) / 4f },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),
@@ -140,7 +148,6 @@ fun RegistrationScreen(
                             currentPage++
                             errors = emptyMap()
                         } else {
-                            // Update errors
                             errors = getErrorsForPage(currentPage, registrationData)
                         }
                     },
@@ -150,10 +157,16 @@ fun RegistrationScreen(
                 PrimaryButton(
                     text = "Create Account",
                     onClick = {
-                        if (validateCurrentPage(currentPage, registrationData) && registrationData.acceptedTerms) {
+                        if (validateCurrentPage(currentPage, registrationData) &&
+                            registrationData.acceptedTerms) {
                             onRegister(registrationData)
                         } else {
-                            errors = getErrorsForPage(currentPage, registrationData)
+                            // Update errors for the last page, including terms check
+                            val tempErrors = getErrorsForPage(currentPage, registrationData).toMutableMap()
+                            if (!registrationData.acceptedTerms && !tempErrors.containsKey("terms")) {
+                                tempErrors["terms"] = "You must agree to the terms and conditions"
+                            }
+                            errors = tempErrors
                         }
                     },
                     isLoading = isLoading,
@@ -170,15 +183,12 @@ fun BasicInfoPage(
     onDataChange: (RegistrationData) -> Unit,
     errors: Map<String, String>
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Basic Information",
             style = MaterialTheme.typography.headlineSmall
         )
 
-        // Full Name
         DisasterTextField(
             value = registrationData.fullName,
             onValueChange = { onDataChange(registrationData.copy(fullName = it)) },
@@ -188,7 +198,6 @@ fun BasicInfoPage(
             errorMessage = errors["fullName"]
         )
 
-        // Email
         DisasterTextField(
             value = registrationData.email,
             onValueChange = { onDataChange(registrationData.copy(email = it)) },
@@ -199,7 +208,6 @@ fun BasicInfoPage(
             errorMessage = errors["email"]
         )
 
-        // Password
         DisasterTextField(
             value = registrationData.password,
             onValueChange = { onDataChange(registrationData.copy(password = it)) },
@@ -210,7 +218,6 @@ fun BasicInfoPage(
             errorMessage = errors["password"]
         )
 
-        // Confirm Password
         DisasterTextField(
             value = registrationData.confirmPassword,
             onValueChange = { onDataChange(registrationData.copy(confirmPassword = it)) },
@@ -232,27 +239,80 @@ fun PersonalDetailsPage(
     errors: Map<String, String>
 ) {
     val genderOptions = listOf("Male", "Female", "Non-binary", "Prefer not to say")
+    val context = LocalContext.current
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    val dateFormatter = remember {
+        SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
+    }
+
+    var selectedDate by remember(registrationData.dateOfBirth) {
+        mutableStateOf(registrationData.dateOfBirth ?: Calendar.getInstance().apply {
+            add(Calendar.YEAR, -18) // Default to 18 years ago
+        }.time)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Personal Details",
             style = MaterialTheme.typography.headlineSmall
         )
 
-        // Date of Birth
-        // Note: In a real app, you would implement a proper date picker
-        DisasterTextField(
-            value = registrationData.dateOfBirth?.toString() ?: "",
-            onValueChange = { /* Implement proper date parsing */ },
-            label = "Date of Birth (MM/DD/YYYY)",
-            leadingIcon = Icons.Filled.CalendarMonth,
-            isError = errors.containsKey("dateOfBirth"),
-            errorMessage = errors["dateOfBirth"]
-        )
+        // Date of Birth Picker
+        Column {
+            Text(
+                text = "Date of Birth",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
 
-        // Gender
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        showDatePicker(
+                            context = context,
+                            initialDate = selectedDate,
+                            onDateSelected = { newDate ->
+                                selectedDate = newDate
+                                onDataChange(registrationData.copy(dateOfBirth = newDate))
+                            }
+                        )
+                    }
+            ) {
+                OutlinedTextField(
+                    value = dateFormatter.format(selectedDate),
+                    onValueChange = {},
+                    label = { Text("MM/DD/YYYY") },
+                    leadingIcon = {
+                        Icon(Icons.Filled.CalendarMonth, contentDescription = "Calendar")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    readOnly = true,
+                    enabled = false,
+                    isError = errors.containsKey("dateOfBirth"),
+                    trailingIcon = {
+                        if (errors.containsKey("dateOfBirth")) {
+                            Icon(
+                                Icons.Filled.Error,
+                                contentDescription = "Error",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                )
+            }
+
+            if (errors.containsKey("dateOfBirth")) {
+                Text(
+                    text = errors["dateOfBirth"] ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            }
+        }
+
+        // Gender Selection
         Column {
             Text(
                 text = "Gender",
@@ -283,17 +343,15 @@ fun PersonalDetailsPage(
             }
         }
 
-        // National ID
         DisasterTextField(
             value = registrationData.nationalId,
             onValueChange = { onDataChange(registrationData.copy(nationalId = it)) },
-            label = "National Identification Number (NIK)",
+            label = "National ID",
             leadingIcon = Icons.Filled.Badge,
             isError = errors.containsKey("nationalId"),
             errorMessage = errors["nationalId"]
         )
 
-        // Phone Number
         DisasterTextField(
             value = registrationData.phoneNumber,
             onValueChange = { onDataChange(registrationData.copy(phoneNumber = it)) },
@@ -304,11 +362,10 @@ fun PersonalDetailsPage(
             errorMessage = errors["phoneNumber"]
         )
 
-        // Address
         DisasterTextField(
             value = registrationData.address,
             onValueChange = { onDataChange(registrationData.copy(address = it)) },
-            label = "Home Address",
+            label = "Address",
             leadingIcon = Icons.Filled.Home,
             isError = errors.containsKey("address"),
             errorMessage = errors["address"]
@@ -333,7 +390,6 @@ fun MedicalInfoPage(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        // Blood Type
         Column {
             Text(
                 text = "Blood Type",
@@ -379,7 +435,6 @@ fun MedicalInfoPage(
             }
         }
 
-        // Medical Conditions (Optional)
         DisasterTextField(
             value = registrationData.medicalConditions,
             onValueChange = { onDataChange(registrationData.copy(medicalConditions = it)) },
@@ -387,7 +442,6 @@ fun MedicalInfoPage(
             leadingIcon = Icons.Outlined.MedicalServices
         )
 
-        // Disabilities (Optional)
         DisasterTextField(
             value = registrationData.disabilities,
             onValueChange = { onDataChange(registrationData.copy(disabilities = it)) },
@@ -395,7 +449,6 @@ fun MedicalInfoPage(
             leadingIcon = Icons.Outlined.Accessible
         )
 
-        // Household Members
         Column {
             Text(
                 text = "Number of Household Members",
@@ -406,7 +459,7 @@ fun MedicalInfoPage(
                 value = registrationData.householdMembers.toFloat(),
                 onValueChange = { onDataChange(registrationData.copy(householdMembers = it.toInt())) },
                 valueRange = 1f..10f,
-                steps = 9,
+                steps = 9, // Results in 10 possible values (1 to 10)
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
@@ -433,7 +486,6 @@ fun EmergencyContactPage(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        // Emergency Contact Name
         DisasterTextField(
             value = registrationData.emergencyContactName,
             onValueChange = { onDataChange(registrationData.copy(emergencyContactName = it)) },
@@ -443,7 +495,6 @@ fun EmergencyContactPage(
             errorMessage = errors["emergencyContactName"]
         )
 
-        // Emergency Contact Relationship
         DisasterTextField(
             value = registrationData.emergencyContactRelationship,
             onValueChange = { onDataChange(registrationData.copy(emergencyContactRelationship = it)) },
@@ -453,7 +504,6 @@ fun EmergencyContactPage(
             errorMessage = errors["emergencyContactRelationship"]
         )
 
-        // Emergency Contact Phone
         DisasterTextField(
             value = registrationData.emergencyContactPhone,
             onValueChange = { onDataChange(registrationData.copy(emergencyContactPhone = it)) },
@@ -466,7 +516,6 @@ fun EmergencyContactPage(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Location Permission
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -474,14 +523,13 @@ fun EmergencyContactPage(
                 checked = registrationData.locationPermissionGranted,
                 onCheckedChange = { onDataChange(registrationData.copy(locationPermissionGranted = it)) }
             )
-
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Allow access to my location for disaster reporting",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
 
-        // Terms and Conditions
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -489,7 +537,7 @@ fun EmergencyContactPage(
                 checked = registrationData.acceptedTerms,
                 onCheckedChange = { onDataChange(registrationData.copy(acceptedTerms = it)) }
             )
-
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "I agree to the Terms and Conditions",
                 style = MaterialTheme.typography.bodyMedium
@@ -501,18 +549,57 @@ fun EmergencyContactPage(
                 text = errors["terms"] ?: "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(start = 48.dp)
+                modifier = Modifier.padding(start = 48.dp) // Aligns with checkbox text roughly
             )
         }
     }
 }
+
+// This private helper function is used to show the DatePickerDialog
+private fun showDatePicker(
+    context: Context,
+    initialDate: Date,
+    onDateSelected: (Date) -> Unit
+) {
+    val calendar = Calendar.getInstance().apply {
+        time = initialDate
+    }
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val selectedCalendar = Calendar.getInstance().apply {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, month)
+                set(Calendar.DAY_OF_MONTH, dayOfMonth)
+            }
+            val selectedDate = selectedCalendar.time
+            onDateSelected(selectedDate)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    // Set max date to current date
+    datePickerDialog.datePicker.maxDate = System.currentTimeMillis()
+
+    // Set min date to 100 years ago
+    val minDate = Calendar.getInstance().apply {
+        add(Calendar.YEAR, -100)
+    }.timeInMillis
+    datePickerDialog.datePicker.minDate = minDate
+
+    datePickerDialog.show()
+}
+
 
 private fun validateCurrentPage(page: Int, data: RegistrationData): Boolean {
     return when (page) {
         0 -> validateBasicInfo(data)
         1 -> validatePersonalDetails(data)
         2 -> validateMedicalInfo(data)
-        3 -> validateEmergencyContact(data)
+        3 -> validateEmergencyContact(data) // Terms are validated separately before final submission
         else -> false
     }
 }
@@ -547,6 +634,17 @@ private fun getErrorsForPage(page: Int, data: RegistrationData): Map<String, Str
         1 -> {
             if (data.dateOfBirth == null) {
                 errors["dateOfBirth"] = "Date of birth is required"
+            } else {
+                val birthLocalDate = data.dateOfBirth.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                val age = Period.between(birthLocalDate, LocalDate.now()).years
+
+                if (age < 18) {
+                    errors["dateOfBirth"] = "You must be at least 18 years old"
+                } else if (age > 100) { // Assuming 100 is a reasonable upper limit
+                    errors["dateOfBirth"] = "Please enter a valid birth date"
+                }
             }
 
             if (data.gender.isBlank()) {
@@ -559,6 +657,9 @@ private fun getErrorsForPage(page: Int, data: RegistrationData): Map<String, Str
 
             if (data.phoneNumber.isBlank()) {
                 errors["phoneNumber"] = "Phone number is required"
+            } else if (!android.util.Patterns.PHONE.matcher(data.phoneNumber).matches()) {
+                // Basic phone validation, can be made more specific
+                errors["phoneNumber"] = "Please enter a valid phone number"
             }
 
             if (data.address.isBlank()) {
@@ -581,15 +682,23 @@ private fun getErrorsForPage(page: Int, data: RegistrationData): Map<String, Str
 
             if (data.emergencyContactPhone.isBlank()) {
                 errors["emergencyContactPhone"] = "Emergency contact phone is required"
+            } else if (!android.util.Patterns.PHONE.matcher(data.emergencyContactPhone).matches()) {
+                errors["emergencyContactPhone"] = "Please enter a valid phone number"
             }
-
-            if (!data.acceptedTerms) {
-                errors["terms"] = "You must agree to the terms and conditions"
-            }
+            // The terms error is handled directly in the RegistrationScreen for the final button
+            // or can be added here if validation for "Next" on page 3 should check it too.
+            // For now, the final "Create Account" button checks it.
         }
     }
-
     return errors
+}
+
+
+// Extension function to convert Date to LocalDate
+private fun Date.toLocalDate(): LocalDate {
+    return this.toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
 }
 
 private fun validateBasicInfo(data: RegistrationData): Boolean {
@@ -603,19 +712,27 @@ private fun validateBasicInfo(data: RegistrationData): Boolean {
 }
 
 private fun validatePersonalDetails(data: RegistrationData): Boolean {
-    return data.dateOfBirth != null &&
+    val isDateValid: Boolean = data.dateOfBirth?.let {
+        val birthLocalDate = it.toLocalDate()
+        val age = Period.between(birthLocalDate, LocalDate.now()).years
+        age in 18..100
+    } ?: false
+
+    return isDateValid &&
             data.gender.isNotBlank() &&
             data.nationalId.isNotBlank() &&
-            data.phoneNumber.isNotBlank() &&
+            data.phoneNumber.isNotBlank() && android.util.Patterns.PHONE.matcher(data.phoneNumber).matches() &&
             data.address.isNotBlank()
 }
 
 private fun validateMedicalInfo(data: RegistrationData): Boolean {
+    // Medical conditions and disabilities are optional, so only blood type is mandatory here.
     return data.bloodType.isNotBlank()
 }
 
 private fun validateEmergencyContact(data: RegistrationData): Boolean {
     return data.emergencyContactName.isNotBlank() &&
             data.emergencyContactRelationship.isNotBlank() &&
-            data.emergencyContactPhone.isNotBlank()
+            data.emergencyContactPhone.isNotBlank() && android.util.Patterns.PHONE.matcher(data.emergencyContactPhone).matches()
+    // data.acceptedTerms is checked on the final submission in RegistrationScreen
 }

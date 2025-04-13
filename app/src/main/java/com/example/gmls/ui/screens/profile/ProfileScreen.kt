@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -104,7 +105,7 @@ fun ProfileScreen(
 
                     // User Name
                     Text(
-                        text = user?.fullName ?: "John Doe",
+                        text = user?.fullName ?: "",
                         style = MaterialTheme.typography.headlineMedium,
                         color = Color.White
                     )
@@ -113,7 +114,7 @@ fun ProfileScreen(
 
                     // User Email
                     Text(
-                        text = user?.email ?: "johndoe@example.com",
+                        text = user?.email ?: "",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White.copy(alpha = 0.8f)
                     )
@@ -132,13 +133,13 @@ fun ProfileScreen(
                 ) {
                     ProfileField(
                         label = "Full Name",
-                        value = user?.fullName ?: "John Doe",
+                        value = user?.fullName ?: "",
                         icon = Icons.Outlined.Person
                     )
 
                     ProfileField(
                         label = "Email",
-                        value = user?.email ?: "johndoe@example.com",
+                        value = user?.email ?: "",
                         icon = Icons.Outlined.Email
                     )
 
@@ -187,18 +188,18 @@ fun ProfileScreen(
                     ProfileField(
                         label = "Blood Type",
                         value = user?.bloodType ?: "O+",
-                        icon = Icons.Outlined.BloodtypeOutlined
+                        icon = Icons.Outlined.Bloodtype
                     )
 
                     ProfileField(
                         label = "Medical Conditions",
-                        value = user?.medicalConditions?.takeIf { it.isNotEmpty() } ?: "None",
+                        value = user?.medicalConditions?.joinToString(", ") ?: "None",
                         icon = Icons.Outlined.MedicalInformation
                     )
 
                     ProfileField(
                         label = "Disabilities",
-                        value = user?.disabilities?.takeIf { it.isNotEmpty() } ?: "None",
+                        value = user?.disabilities?.joinToString(", ") ?: "None",
                         icon = Icons.Outlined.Accessible
                     )
                 }

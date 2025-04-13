@@ -34,26 +34,16 @@ class DisasterViewModel @Inject constructor(
      */
     fun loadDisasters() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-
-            val result = disasterRepository.getAllDisasters()
-
-            if (result.isSuccess) {
-                _uiState.update {
-                    it.copy(
-                        disasters = result.getOrDefault(emptyList()),
-                        filteredDisasters = result.getOrDefault(emptyList()),
-                        isLoading = false,
-                        error = null
-                    )
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val result = disasterRepository.getAllDisasters()
+                if (result.isSuccess) {
+                    _uiState.update { it.copy(disasters = result.getOrDefault(emptyList()), isLoading = false) }
+                } else {
+                    _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to load disasters", isLoading = false) }
                 }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to load disasters"
-                    )
-                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
         }
     }
@@ -96,29 +86,28 @@ class DisasterViewModel @Inject constructor(
      * Get a specific disaster by ID
      * @param id The disaster ID
      */
-    fun getDisasterById(id: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingDetail = true) }
+    fun getDisasterById(id: String): Disaster? {
+        return _uiState.value.disasters.find { it.id == id }
+    }
 
-            val result = disasterRepository.getDisasterById(id)
-
-            if (result.isSuccess) {
-                _uiState.update {
-                    it.copy(
-                        selectedDisaster = result.getOrNull(),
-                        isLoadingDetail = false,
-                        error = null
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoadingDetail = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to get disaster details"
-                    )
-                }
-            }
+    /**
+     * Get disasters by type
+     * @param type The disaster type to filter by, or null to show all
+     */
+    fun getDisastersByType(type: DisasterType?): List<Disaster> {
+        return if (type == null) {
+            _uiState.value.disasters
+        } else {
+            _uiState.value.disasters.filter { it.type == type }
         }
+    }
+
+    /**
+     * Get disasters by status
+     * @param status The disaster status to filter by
+     */
+    fun getDisastersByStatus(status: Disaster.Status): List<Disaster> {
+        return _uiState.value.disasters.filter { it.status == status }
     }
 
     /**

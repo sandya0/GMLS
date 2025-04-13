@@ -1,17 +1,30 @@
 package com.example.gmls.data.remote
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import com.example.gmls.domain.model.Disaster
 import com.example.gmls.domain.model.DisasterFirebaseMapper
 import com.example.gmls.domain.model.DisasterType
 import com.example.gmls.ui.screens.auth.RegistrationData
 import com.example.gmls.ui.screens.disaster.DisasterReport
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageException
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,11 +34,75 @@ import javax.inject.Singleton
  */
 @Singleton
 class FirebaseService @Inject constructor(
+    private val context: Context,
     private val disasterMapper: DisasterFirebaseMapper
 ) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
+
+    private val maxRetries = 3
+    private val initialRetryDelay = 1000L // 1 second
+
+    val authStateFlow: Flow<FirebaseUser?> = callbackFlow {
+        val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            trySend(firebaseAuth.currentUser).isSuccess
+        }
+        auth.addAuthStateListener(authStateListener)
+        awaitClose { auth.removeAuthStateListener(authStateListener) }
+    }
+
+    /**
+     * Check if network is available
+     */
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    /**
+     * Execute a Firebase operation with retry mechanism
+     */
+    private suspend fun <T> executeWithRetry(
+        retryCount: Int = maxRetries,
+        operation: suspend () -> T
+    ): Result<T> = withContext(Dispatchers.IO) {
+        if (!isNetworkAvailable()) {
+            return@withContext Result.failure(NoInternetException())
+        }
+
+        var currentDelay = initialRetryDelay
+        repeat(retryCount) { attempt ->
+            try {
+                return@withContext Result.success(operation())
+            } catch (e: Exception) {
+                if (attempt == retryCount - 1) {
+                    return@withContext Result.failure(e)
+                }
+                when (e) {
+                    is FirebaseNetworkException -> {
+                        delay(currentDelay)
+                        currentDelay *= 2 // Exponential backoff
+                    }
+                    is FirebaseAuthInvalidCredentialsException,
+                    is FirebaseAuthInvalidUserException,
+                    is IllegalArgumentException -> {
+                        return@withContext Result.failure(e)
+                    }
+                    else -> {
+                        if (attempt == retryCount - 1) {
+                            return@withContext Result.failure(e)
+                        }
+                        delay(currentDelay)
+                        currentDelay *= 2
+                    }
+                }
+            }
+        }
+        Result.failure(Exception("Max retries exceeded"))
+    }
 
     // Authentication
 
@@ -34,11 +111,10 @@ class FirebaseService @Inject constructor(
      * @return FirebaseUser if successful
      */
     suspend fun login(email: String, password: String): Result<FirebaseUser> {
-        return try {
-            val authResult = auth.signInWithEmailAndPassword(email, password).await()
-            Result.success(authResult.user!!)
-        } catch (e: Exception) {
-            Result.failure(e)
+        return executeWithRetry {
+            auth.signInWithEmailAndPassword(email, password).await()
+            // Return the currentUser from the auth instance directly
+            auth.currentUser ?: throw Exception("Authentication failed, user is null after sign in")
         }
     }
 
@@ -47,36 +123,48 @@ class FirebaseService @Inject constructor(
      * @return FirebaseUser if successful
      */
     suspend fun register(userData: RegistrationData): Result<FirebaseUser> {
-        return try {
-            // Create authentication account
-            val authResult = auth.createUserWithEmailAndPassword(userData.email, userData.password).await()
-            val user = authResult.user!!
+        return executeWithRetry {
+            try {
+                // Create authentication account
+                val authResult = auth.createUserWithEmailAndPassword(userData.email, userData.password).await()
+                val user = authResult.user ?: throw Exception("User creation failed")
 
-            // Save additional user data to Firestore
-            val userMap = mapOf(
-                "fullName" to userData.fullName,
-                "email" to userData.email,
-                "dateOfBirth" to userData.dateOfBirth,
-                "gender" to userData.gender,
-                "nationalId" to userData.nationalId,
-                "phoneNumber" to userData.phoneNumber,
-                "address" to userData.address,
-                "bloodType" to userData.bloodType,
-                "medicalConditions" to userData.medicalConditions,
-                "disabilities" to userData.disabilities,
-                "emergencyContactName" to userData.emergencyContactName,
-                "emergencyContactRelationship" to userData.emergencyContactRelationship,
-                "emergencyContactPhone" to userData.emergencyContactPhone,
-                "householdMembers" to userData.householdMembers,
-                "locationPermissionGranted" to userData.locationPermissionGranted,
-                "createdAt" to Date()
-            )
+                // Save additional user data to Firestore
+                val userMap = mapOf(
+                    "fullName" to userData.fullName,
+                    "email" to userData.email,
+                    "dateOfBirth" to userData.dateOfBirth,
+                    "gender" to userData.gender,
+                    "nationalId" to userData.nationalId,
+                    "phoneNumber" to userData.phoneNumber,
+                    "address" to userData.address,
+                    "bloodType" to userData.bloodType,
+                    "medicalConditions" to userData.medicalConditions,
+                    "disabilities" to userData.disabilities,
+                    "emergencyContactName" to userData.emergencyContactName,
+                    "emergencyContactRelationship" to userData.emergencyContactRelationship,
+                    "emergencyContactPhone" to userData.emergencyContactPhone,
+                    "householdMembers" to userData.householdMembers,
+                    "locationPermissionGranted" to userData.locationPermissionGranted,
+                    "createdAt" to Date()
+                )
 
-            firestore.collection("users").document(user.uid).set(userMap).await()
+                try {
+                    firestore.collection("users").document(user.uid).set(userMap).await()
+                } catch (e: Exception) {
+                    // If Firestore update fails, delete the auth user to maintain consistency
+                    user.delete().await()
+                    throw Exception("Failed to save user data: ${e.message}")
+                }
 
-            Result.success(user)
-        } catch (e: Exception) {
-            Result.failure(e)
+                user
+            } catch (e: Exception) {
+                when (e) {
+                    is FirebaseAuthInvalidCredentialsException -> throw Exception("Invalid email or password format")
+                    is FirebaseNetworkException -> throw Exception("Network error. Please check your connection")
+                    else -> throw Exception("Registration failed: ${e.message}")
+                }
+            }
         }
     }
 
@@ -102,19 +190,15 @@ class FirebaseService @Inject constructor(
      * @return List of disasters
      */
     suspend fun getAllDisasters(): Result<List<Disaster>> {
-        return try {
+        return executeWithRetry {
             val snapshot = firestore.collection("disasters")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
-            val disasters = snapshot.documents.map { document ->
+            snapshot.documents.map { document ->
                 disasterMapper.mapToDisaster(document.id, document.data as Map<String, Any>)
             }
-
-            Result.success(disasters)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
@@ -124,20 +208,16 @@ class FirebaseService @Inject constructor(
      * @return List of disasters of the specified type
      */
     suspend fun getDisastersByType(type: DisasterType): Result<List<Disaster>> {
-        return try {
+        return executeWithRetry {
             val snapshot = firestore.collection("disasters")
                 .whereEqualTo("type", type.name)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
-            val disasters = snapshot.documents.map { document ->
+            snapshot.documents.map { document ->
                 disasterMapper.mapToDisaster(document.id, document.data as Map<String, Any>)
             }
-
-            Result.success(disasters)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
@@ -147,17 +227,12 @@ class FirebaseService @Inject constructor(
      * @return Disaster if found
      */
     suspend fun getDisasterById(id: String): Result<Disaster> {
-        return try {
+        return executeWithRetry {
             val document = firestore.collection("disasters").document(id).get().await()
-
-            if (document.exists()) {
-                val disaster = disasterMapper.mapToDisaster(document.id, document.data as Map<String, Any>)
-                Result.success(disaster)
-            } else {
-                Result.failure(NoSuchElementException("Disaster with ID $id not found"))
+            if (!document.exists()) {
+                throw NoSuchElementException("Disaster with ID $id not found")
             }
-        } catch (e: Exception) {
-            Result.failure(e)
+            disasterMapper.mapToDisaster(document.id, document.data as Map<String, Any>)
         }
     }
 
@@ -169,11 +244,14 @@ class FirebaseService @Inject constructor(
      * @return Disaster ID if successful
      */
     suspend fun reportDisaster(report: DisasterReport, latitude: Double, longitude: Double): Result<String> {
-        return try {
-            // Upload images to Firebase Storage
+        return executeWithRetry {
+            // Validate data
+            validateDisasterReport(report)
+
+            // Upload images
             val imageUrls = uploadImages(report.images)
 
-            // Create disaster document in Firestore
+            // Create disaster document
             val disasterMap = mapOf(
                 "title" to report.title,
                 "description" to report.description,
@@ -185,24 +263,20 @@ class FirebaseService @Inject constructor(
                 "status" to Disaster.Status.REPORTED.name,
                 "latitude" to latitude,
                 "longitude" to longitude,
-                "reportedBy" to (auth.currentUser?.uid ?: "anonymous"),
+                "reportedBy" to (auth.currentUser?.uid ?: throw NotAuthenticatedException()),
                 "updatedAt" to Date().time
             )
 
             val documentRef = firestore.collection("disasters").add(disasterMap).await()
 
             // Update user's reported disasters
-            auth.currentUser?.uid?.let { userId ->
-                firestore.collection("users").document(userId)
-                    .collection("reportedDisasters")
-                    .document(documentRef.id)
-                    .set(mapOf("timestamp" to Date().time))
-                    .await()
-            }
+            firestore.collection("users").document(auth.currentUser!!.uid)
+                .collection("reportedDisasters")
+                .document(documentRef.id)
+                .set(mapOf("timestamp" to Date().time))
+                .await()
 
-            Result.success(documentRef.id)
-        } catch (e: Exception) {
-            Result.failure(e)
+            documentRef.id
         }
     }
 
@@ -212,19 +286,26 @@ class FirebaseService @Inject constructor(
      * @return List of download URLs
      */
     private suspend fun uploadImages(images: List<Uri>): List<String> {
-        val imageUrls = mutableListOf<String>()
+        return images.map { imageUri ->
+            executeWithRetry {
+                val fileName = "${UUID.randomUUID()}.jpg"
+                val storageRef = storage.reference.child("disaster_images/$fileName")
 
-        for (imageUri in images) {
-            val fileName = "${UUID.randomUUID()}.jpg"
-            val storageRef = storage.reference.child("disaster_images/$fileName")
-
-            storageRef.putFile(imageUri).await()
-            val downloadUrl = storageRef.downloadUrl.await().toString()
-
-            imageUrls.add(downloadUrl)
+                try {
+                    storageRef.putFile(imageUri).await()
+                    storageRef.downloadUrl.await().toString()
+                } catch (e: StorageException) {
+                    throw ImageUploadException("Failed to upload image", e)
+                }
+            }.getOrThrow()
         }
+    }
 
-        return imageUrls
+    private fun validateDisasterReport(report: DisasterReport) {
+        if (report.title.isBlank()) throw ValidationException("Title cannot be empty")
+        if (report.description.isBlank()) throw ValidationException("Description cannot be empty")
+        if (!report.useCurrentLocation && report.location.isBlank()) throw ValidationException("Location cannot be empty")
+        if (report.affectedCount < 0) throw ValidationException("Affected count cannot be negative")
     }
 
     /**
@@ -233,7 +314,7 @@ class FirebaseService @Inject constructor(
      * @param status The new status
      */
     suspend fun updateDisasterStatus(disasterId: String, status: Disaster.Status): Result<Unit> {
-        return try {
+        return executeWithRetry {
             firestore.collection("disasters").document(disasterId)
                 .update(
                     mapOf(
@@ -242,10 +323,6 @@ class FirebaseService @Inject constructor(
                     )
                 )
                 .await()
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
@@ -257,20 +334,18 @@ class FirebaseService @Inject constructor(
      * @return Map of user data
      */
     suspend fun getUserProfile(userId: String = auth.currentUser?.uid ?: ""): Result<Map<String, Any>> {
-        return try {
+        return executeWithRetry {
             if (userId.isEmpty()) {
-                return Result.failure(IllegalStateException("No user is currently logged in"))
+                throw IllegalStateException("No user is currently logged in")
             }
 
             val document = firestore.collection("users").document(userId).get().await()
 
             if (document.exists()) {
-                Result.success(document.data as Map<String, Any>)
+                document.data as Map<String, Any>
             } else {
-                Result.failure(NoSuchElementException("User profile not found"))
+                throw NoSuchElementException("User profile not found")
             }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
@@ -279,9 +354,9 @@ class FirebaseService @Inject constructor(
      * @param updates Map of fields to update
      */
     suspend fun updateUserProfile(updates: Map<String, Any>): Result<Unit> {
-        return try {
+        return executeWithRetry {
             val userId = auth.currentUser?.uid
-                ?: return Result.failure(IllegalStateException("No user is currently logged in"))
+                ?: throw IllegalStateException("No user is currently logged in")
 
             val updatedMap = updates.toMutableMap().apply {
                 put("updatedAt", Date().time)
@@ -290,10 +365,6 @@ class FirebaseService @Inject constructor(
             firestore.collection("users").document(userId)
                 .update(updatedMap)
                 .await()
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
@@ -304,17 +375,25 @@ class FirebaseService @Inject constructor(
      * @param token The FCM token
      */
     suspend fun saveUserFCMToken(token: String): Result<Unit> {
-        return try {
+        return executeWithRetry {
             val userId = auth.currentUser?.uid
-                ?: return Result.failure(IllegalStateException("No user is currently logged in"))
+                ?: throw IllegalStateException("No user is currently logged in")
 
             firestore.collection("users").document(userId)
                 .update("fcmToken", token)
                 .await()
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
+
+    // Add these public methods
+    suspend fun <T> executeFirestoreOperation(operation: suspend () -> T): Result<T> {
+        return executeWithRetry { operation() }
+    }
+
+    fun getFirestore(): FirebaseFirestore = firestore
 }
+
+class NoInternetException : Exception("No internet connection available")
+class NotAuthenticatedException : Exception("User not authenticated")
+class ValidationException(message: String) : Exception(message)
+class ImageUploadException(message: String, cause: Throwable) : Exception(message, cause)

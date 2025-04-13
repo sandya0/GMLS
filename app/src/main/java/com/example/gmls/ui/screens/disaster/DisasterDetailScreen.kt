@@ -20,10 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.disasterresponse.domain.model.Disaster
-import com.disasterresponse.domain.model.DisasterType
-import com.disasterresponse.domain.model.SeverityLevel
-import com.disasterresponse.ui.theme.Red
+import com.example.gmls.domain.model.Disaster
+import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.SeverityLevel
+import com.example.gmls.ui.theme.Red
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -33,8 +33,11 @@ object AppModule {
      */
     @Provides
     @Singleton
-    fun provideFirebaseService(disasterMapper: DisasterFirebaseMapper): FirebaseService {
-        return FirebaseService(disasterMapper)
+    fun provideFirebaseService(
+        @ApplicationContext context: Context,
+        disasterMapper: DisasterFirebaseMapper
+    ): FirebaseService {
+        return FirebaseService(context, disasterMapper)
     }
 
     /**
