@@ -1,0 +1,336 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is verified
+    function isVerified() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isVerified == true;
+    }
+    
+    // Helper function to check if user is active
+    function isActive() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive != false;
+    }
+    
+    // Helper function to check if user is owner
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Helper function to check if this is the bootstrap admin creation
+    // This allows creating the first admin user when no admins exist
+    function isBootstrapAdminCreation() {
+      return request.auth != null && 
+             request.resource.data.role == 'admin' &&
+             request.resource.data.email != null &&
+             request.resource.data.fullName != null;
+    }
+    
+    // Helper function to validate disaster data
+    function isValidDisaster() {
+             return request.resource.data.keys().hasAll(['title', 'description', 'location', 'type', 'timestamp', 'affectedCount', 'reportedBy', 'status']) &&
+              request.resource.data.type in ['EARTHQUAKE', 'FLOOD', 'WILDFIRE', 'LANDSLIDE', 'VOLCANO', 'TSUNAMI', 'HURRICANE', 'TORNADO', 'OTHER'] &&
+              request.resource.data.status in ['REPORTED', 'VERIFIED', 'IN_PROGRESS', 'RESOLVED'] &&
+              request.resource.data.affectedCount >= 0 &&
+              request.resource.data.title is string &&
+              request.resource.data.title.size() >= 3 &&
+              request.resource.data.title.size() <= 200 &&
+              request.resource.data.description is string &&
+              request.resource.data.description.size() >= 10 &&
+              request.resource.data.description.size() <= 2000 &&
+              request.resource.data.location is string;
+    }
+    
+    // Helper function to validate user data
+    function isValidUserData() {
+      return request.resource.data.keys().hasAll(['fullName', 'email', 'role', 'isVerified', 'isActive', 'createdAt']) &&
+             request.resource.data.role in ['admin', 'user'] &&
+             request.resource.data.email is string &&
+             request.resource.data.email.matches('.*@.*\\..*') &&
+             request.resource.data.fullName is string &&
+             request.resource.data.fullName.size() >= 2 &&
+             request.resource.data.fullName.size() <= 100;
+    }
+    
+    // Helper function to validate user updates
+    function isValidUserUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'phoneNumber', 'address', 'isVerified', 'isActive', 'updatedAt', 
+                          'latitude', 'longitude', 'dateOfBirth', 'gender', 'nationalId', 'familyCardNumber', 
+                          'placeOfBirth', 'religion', 'maritalStatus', 'familyRelationshipStatus', 
+                          'lastEducation', 'occupation', 'economicStatus', 'bloodType', 'medicalConditions',
+                          'disabilities', 'emergencyContactName', 'emergencyContactRelationship',
+                          'emergencyContactPhone', 'householdMembers', 'locationPermissionGranted',
+                          'profilePictureUrl', 'fcmToken', 'lastLocationUpdate', 'lastLoginAt']) &&
+             (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['fullName']) ||
+              (request.resource.data.fullName is string && 
+               request.resource.data.fullName.size() >= 2 && 
+               request.resource.data.fullName.size() <= 100)) &&
+             (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['phoneNumber']) ||
+              request.resource.data.phoneNumber == null ||
+              (request.resource.data.phoneNumber is string && 
+               request.resource.data.phoneNumber.size() >= 10 && 
+               request.resource.data.phoneNumber.size() <= 15));
+    }
+    
+    // Helper function to check if user can modify roles
+    function canModifyUserRole() {
+      // Only admins can modify roles, and they can't demote themselves
+      return isAdmin() && 
+             (request.auth.uid != resource.id || 
+              request.resource.data.role == resource.data.role);
+    }
+    
+    // Users collection - Enhanced security with bootstrap support
+    match /users/{userId} {
+      // Read permissions - Users can read their own profile, admins can read all,
+      // verified users can read basic info of other users for emergency purposes
+      allow read: if isAuthenticated() && (
+        isOwner(userId) || 
+        isAdmin() || 
+        (isVerified() && isActive())
+      );
+      
+      // Create permissions - Enhanced to support bootstrap admin creation
+      allow create: if isAuthenticated() && (
+        // Users can create their own profile
+        (isOwner(userId) && isValidUserData() && request.resource.data.role == 'user') ||
+        // Admins can create any user
+        (isAdmin() && isValidUserData()) ||
+        // Bootstrap: Allow creating admin user if authenticated (for initial setup)
+        (isOwner(userId) && isBootstrapAdminCreation())
+      );
+      
+      // Update permissions - Users can update their own profile (limited fields),
+      // admins can update any profile
+      allow update: if isAuthenticated() && isValidUserUpdate() && isActive() && (
+        // Users can update their own profile (except role and verification status)
+        (isOwner(userId) && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified'])) ||
+        // Admins can update any user
+        (isAdmin() && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
+          canModifyUserRole()
+        )) ||
+        // Bootstrap: Allow user to set themselves as admin (one-time setup)
+        (isOwner(userId) && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'isVerified', 'updatedAt']) &&
+         request.resource.data.role == 'admin')
+      );
+      
+      // Delete permissions - Only admins can delete users, but not themselves
+      allow delete: if isAdmin() && request.auth.uid != userId;
+      
+      // User's reported disasters subcollection
+      match /reportedDisasters/{disasterId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && isActive() && (isOwner(userId) || isAdmin());
+      }
+    }
+    
+    // Disasters collection - Enhanced validation and permissions
+    match /disasters/{disasterId} {
+      // Read permissions - All authenticated users can read disasters
+      allow read: if true; // Allow public read access to disasters
+      
+      // Create permissions - Authenticated and active users can create disasters
+      allow create: if isAuthenticated() && isActive() && isValidDisaster() && (
+        request.resource.data.reportedBy == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Update permissions - Users can update their own disasters,
+      // verified users can update status, admins can update any disaster
+      allow update: if isAuthenticated() && isActive() && (
+        // Allow owner to update their own disaster
+        (resource.data.reportedBy == request.auth.uid) ||
+        // Allow admins to update any disaster
+        isAdmin() ||
+        // Allow verified users to update status only
+        (isVerified() &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+      );
+      
+      // Delete permissions - Users can delete their own disasters within 24 hours,
+      // admins can delete any disaster
+      allow delete: if isAuthenticated() && (
+        (resource.data.reportedBy == request.auth.uid && 
+         (request.time.toMillis() - resource.data.timestamp.toMillis()) < 86400000) ||
+        isAdmin()
+      );
+    }
+    
+    // Admin audit logs collection - Strict admin-only access
+    match /admin_audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && 
+                   request.resource.data.adminId == request.auth.uid &&
+                   request.resource.data.timestamp != null &&
+                   request.resource.data.action != null &&
+                   request.resource.data.adminName != null;
+      allow update: if false; // Audit logs should never be updated
+      allow delete: if false; // Audit logs should never be deleted
+    }
+    
+    // User sessions collection - Session management
+    match /user_sessions/{sessionId} {
+      allow read: if isAuthenticated() && (
+        isOwner(sessionId) || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && isOwner(sessionId) &&
+                   request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(sessionId) &&
+                   request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && (isOwner(sessionId) || isAdmin());
+    }
+    
+        // Notifications collection - Enhanced notification system
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.type == "BROADCAST" ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (request.resource.data.userId == request.auth.uid &&
+         request.resource.data.title != null &&
+         request.resource.data.message != null &&
+         request.resource.data.timestamp != null)
+      );
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt'])) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // User notifications subcollection (alternative structure)
+    match /user_notifications/{notificationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt'])) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // System settings - Admin configuration
+    match /systemSettings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Analytics collection - Admin analytics and reports
+    match /analytics/{analyticsId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Admin statistics collection - Read-only computed stats
+    match /admin_stats/{statId} {
+      allow read: if isAdmin();
+      allow write: if false; // Statistics are computed server-side
+    }
+    
+    // Emergency contacts - Public read, admin write
+    match /emergencyContacts/{contactId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Resources collection - Disaster response resources
+    match /resources/{resourceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || isVerified();
+      allow update: if isAdmin() || (isVerified() && resource.data.createdBy == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+    
+    // Admin logs (alternative collection name)
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // Audit trail - Comprehensive audit logging
+    match /auditTrail/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if false; // Audit records should never be modified
+      allow delete: if false; // Audit records should never be deleted
+    }
+    
+    // Reports collection - Generated reports and exports
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // FCM tokens collection (if stored separately)
+    match /fcmTokens/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+    
+    // User feedback and support tickets
+    match /support/{ticketId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && isActive() &&
+                   request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'userResponse', 'updatedAt'])) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // Application logs (for debugging and monitoring)
+    match /appLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated(); // Allow users to create error logs
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    
+    // Default deny rule for any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

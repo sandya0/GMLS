@@ -42,19 +42,29 @@ class DisasterRepositoryImpl @Inject constructor(
     override suspend fun reportDisaster(report: DisasterReport): Result<String> {
         return try {
             // Get current location coordinates if using current location
-            val coords = if (report.useCurrentLocation) {
+            val coordsResult = if (report.useCurrentLocation) {
                 locationService.getCurrentLocation()
             } else {
                 // Try to geocode the provided location address
-                locationService.geocodeAddress(report.location)
+                val geocodedCoords = locationService.geocodeAddress(report.location)
+                if (geocodedCoords != null) Result.success(geocodedCoords) else Result.failure(Exception("Could not geocode address"))
             }
 
-            if (coords != null) {
+            if (coordsResult.isSuccess) {
+                val coords = coordsResult.getOrThrow()
                 firebaseService.reportDisaster(report, coords.latitude, coords.longitude)
             } else {
                 // Fallback to default coordinates if location couldn't be determined
                 firebaseService.reportDisaster(report, 0.0, 0.0)
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun reportDisaster(report: DisasterReport, latitude: Double, longitude: Double): Result<String> {
+        return try {
+            firebaseService.reportDisaster(report, latitude, longitude)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -66,8 +76,9 @@ class DisasterRepositoryImpl @Inject constructor(
 
     override suspend fun getNearbyDisasters(radiusKm: Double): Result<List<Disaster>> {
         return try {
-            val currentLocation = locationService.getCurrentLocation()
-            if (currentLocation != null) {
+            val currentLocationResult = locationService.getCurrentLocation()
+            if (currentLocationResult.isSuccess) {
+                val currentLocation = currentLocationResult.getOrThrow()
                 val allDisasters = getAllDisasters().getOrDefault(emptyList())
 
                 // Filter disasters by distance

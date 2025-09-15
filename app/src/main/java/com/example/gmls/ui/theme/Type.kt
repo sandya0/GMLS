@@ -7,119 +7,129 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// You would define custom fonts here if using them
-// For example:
-// val Poppins = FontFamily(
-//     Font(R.font.poppins_regular),
-//     Font(R.font.poppins_medium, FontWeight.Medium),
-//     Font(R.font.poppins_semibold, FontWeight.SemiBold),
-//     Font(R.font.poppins_bold, FontWeight.Bold)
+// Modern typography system with improved readability and hierarchy
+// You can add custom fonts here for enhanced branding:
+// val InterFont = FontFamily(
+//     Font(R.font.inter_regular, FontWeight.Normal),
+//     Font(R.font.inter_medium, FontWeight.Medium),
+//     Font(R.font.inter_semibold, FontWeight.SemiBold),
+//     Font(R.font.inter_bold, FontWeight.Bold)
 // )
 
-// Typography setup with clean, modern styles
+// Modern Typography with enhanced hierarchy and readability
 val Typography = Typography(
-    // Large titles for splash screens and major headers
+    // Display styles for hero sections and major headings
     displayLarge = TextStyle(
-        // fontFamily = Poppins,
+        // fontFamily = InterFont,
+        fontWeight = FontWeight.Bold,
+        fontSize = 36.sp,
+        lineHeight = 44.sp,
+        letterSpacing = (-0.25).sp
+    ),
+    displayMedium = TextStyle(
+        // fontFamily = InterFont,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
-        letterSpacing = (-0.5).sp
+        letterSpacing = 0.sp
     ),
-    // Screen titles and important section headers
-    displayMedium = TextStyle(
-        // fontFamily = Poppins,
-        fontWeight = FontWeight.Bold,
+    displaySmall = TextStyle(
+        // fontFamily = InterFont,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 28.sp,
         lineHeight = 36.sp,
         letterSpacing = 0.sp
     ),
-    // Secondary headers
-    displaySmall = TextStyle(
-        // fontFamily = Poppins,
+    
+    // Headline styles for section headers and important content
+    headlineLarge = TextStyle(
+        // fontFamily = InterFont,
         fontWeight = FontWeight.SemiBold,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
-    // Section headers
-    headlineLarge = TextStyle(
-        // fontFamily = Poppins,
+    headlineMedium = TextStyle(
+        // fontFamily = InterFont,
         fontWeight = FontWeight.SemiBold,
         fontSize = 20.sp,
         lineHeight = 28.sp,
-        letterSpacing = 0.sp
+        letterSpacing = 0.15.sp
     ),
-    // Card headers and emphasized text
-    headlineMedium = TextStyle(
-        // fontFamily = Poppins,
+    headlineSmall = TextStyle(
+        // fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
         fontSize = 18.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.1.sp
+        lineHeight = 26.sp,
+        letterSpacing = 0.15.sp
     ),
-    // Sub-headers within sections
-    headlineSmall = TextStyle(
-        // fontFamily = Poppins,
-        fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.1.sp
-    ),
-    // Button text, important interactive elements
+    
+    // Title styles for cards, dialogs, and emphasized content
     titleLarge = TextStyle(
-        // fontFamily = Poppins,
+        // fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.1.sp
+        fontSize = 18.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.15.sp
     ),
-    // Secondary buttons, form field labels
     titleMedium = TextStyle(
-        // fontFamily = Poppins,
+        // fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
-    ),
-    // Small headers, timestamps
-    titleSmall = TextStyle(
-        // fontFamily = Poppins,
-        fontWeight = FontWeight.Medium,
-        fontSize = 13.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.1.sp
-    ),
-    // Primary body text
-    bodyLarge = TextStyle(
-        // fontFamily = Poppins,
-        fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp
     ),
-    // Secondary body text, descriptions
-    bodyMedium = TextStyle(
-        // fontFamily = Poppins,
-        fontWeight = FontWeight.Normal,
+    titleSmall = TextStyle(
+        // fontFamily = InterFont,
+        fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     ),
-    // Caption text, metadata
+    
+    // Body styles for main content and descriptions
+    bodyLarge = TextStyle(
+        // fontFamily = InterFont,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.15.sp
+    ),
+    bodyMedium = TextStyle(
+        // fontFamily = InterFont,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.25.sp
+    ),
     bodySmall = TextStyle(
-        // fontFamily = Poppins,
+        // fontFamily = InterFont,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
-        lineHeight = 16.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.4.sp
+    ),
+    
+    // Label styles for buttons, chips, and metadata
+    labelLarge = TextStyle(
+        // fontFamily = InterFont,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     ),
-    // Small metadata text, footnotes
+    labelMedium = TextStyle(
+        // fontFamily = InterFont,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    ),
     labelSmall = TextStyle(
-        // fontFamily = Poppins,
+        // fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.1.sp
+        letterSpacing = 0.5.sp
     )
 )

@@ -136,17 +136,30 @@ class FirebaseService @Inject constructor(
                     "dateOfBirth" to userData.dateOfBirth,
                     "gender" to userData.gender,
                     "nationalId" to userData.nationalId,
+                    "familyCardNumber" to userData.familyCardNumber,
+                    "placeOfBirth" to userData.placeOfBirth,
+                    "religion" to userData.religion,
+                    "maritalStatus" to userData.maritalStatus,
+                    "familyRelationshipStatus" to userData.familyRelationshipStatus,
+                    "lastEducation" to userData.lastEducation,
+                    "occupation" to userData.occupation,
+                    "economicStatus" to userData.economicStatus,
+                    "latitude" to userData.latitude,
+                    "longitude" to userData.longitude,
                     "phoneNumber" to userData.phoneNumber,
                     "address" to userData.address,
                     "bloodType" to userData.bloodType,
-                    "medicalConditions" to userData.medicalConditions,
-                    "disabilities" to userData.disabilities,
+                    "medicalConditions" to if (userData.medicalConditions is List<*>) userData.medicalConditions else listOf(userData.medicalConditions),
+                    "disabilities" to if (userData.disabilities is List<*>) userData.disabilities else listOf(userData.disabilities),
                     "emergencyContactName" to userData.emergencyContactName,
                     "emergencyContactRelationship" to userData.emergencyContactRelationship,
                     "emergencyContactPhone" to userData.emergencyContactPhone,
                     "householdMembers" to userData.householdMembers,
                     "locationPermissionGranted" to userData.locationPermissionGranted,
-                    "createdAt" to Date()
+                    "createdAt" to Date(),
+                    "updatedAt" to Date(),
+                    "role" to "user",
+                    "isVerified" to false
                 )
 
                 try {
@@ -256,6 +269,7 @@ class FirebaseService @Inject constructor(
                 "title" to report.title,
                 "description" to report.description,
                 "location" to report.location,
+                "useCurrentLocation" to report.useCurrentLocation,
                 "type" to report.type.name,
                 "timestamp" to report.timestamp.time,
                 "affectedCount" to report.affectedCount,
@@ -391,6 +405,17 @@ class FirebaseService @Inject constructor(
     }
 
     fun getFirestore(): FirebaseFirestore = firestore
+
+    /**
+     * Get all users (for admin)
+     * @return List of user data maps
+     */
+    suspend fun getAllUsers(): Result<List<Map<String, Any>>> {
+        return executeWithRetry {
+            val snapshot = firestore.collection("users").get().await()
+            snapshot.documents.mapNotNull { it.data }
+        }
+    }
 }
 
 class NoInternetException : Exception("No internet connection available")

@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gmls.domain.model.Disaster
 import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.User
 import com.example.gmls.domain.repository.DisasterRepository
+import com.example.gmls.domain.repository.UserRepository
+import com.example.gmls.data.repository.UserRepositoryImpl
 import com.example.gmls.ui.screens.disaster.DisasterReport
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +22,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class DisasterViewModel @Inject constructor(
-    private val disasterRepository: DisasterRepository
+    private val disasterRepository: DisasterRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DisasterUiState())
@@ -27,6 +31,16 @@ class DisasterViewModel @Inject constructor(
 
     init {
         loadDisasters()
+        loadUsers()
+    }
+
+    /**
+     * Load all data (disasters and users)
+     * Public method for use in admin dashboard
+     */
+    fun loadData() {
+        loadDisasters()
+        loadUsers()
     }
 
     /**
@@ -34,16 +48,31 @@ class DisasterViewModel @Inject constructor(
      */
     fun loadDisasters() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, success = null) }
             try {
                 val result = disasterRepository.getAllDisasters()
                 if (result.isSuccess) {
-                    _uiState.update { it.copy(disasters = result.getOrDefault(emptyList()), isLoading = false) }
+                    _uiState.update { it.copy(disasters = result.getOrDefault(emptyList()), isLoading = false, success = "Bencana berhasil dimuat", error = null) }
                 } else {
-                    _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to load disasters", isLoading = false) }
+                    _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Gagal memuat bencana", isLoading = false, success = null) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                _uiState.update { it.copy(error = e.message, isLoading = false, success = null) }
+            }
+        }
+    }
+
+    /**
+     * Load all users for admin dashboard
+     */
+    private fun loadUsers() {
+        viewModelScope.launch {
+            try {
+                val users = userRepository.getAllUsers()
+                _uiState.update { it.copy(users = users) }
+            } catch (e: Exception) {
+                // Just log the error but don't update UI state as this is background operation
+                e.printStackTrace()
             }
         }
     }
@@ -75,7 +104,7 @@ class DisasterViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to filter disasters"
+                        error = result.exceptionOrNull()?.message ?: "Gagal memfilter bencana"
                     )
                 }
             }
@@ -113,12 +142,17 @@ class DisasterViewModel @Inject constructor(
     /**
      * Report a new disaster
      * @param report The disaster report
+     * @param latLng The latitude and longitude (nullable)
      */
-    fun reportDisaster(report: DisasterReport) {
+    fun reportDisaster(report: DisasterReport, latLng: Pair<Double, Double>? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true) }
 
-            val result = disasterRepository.reportDisaster(report)
+            val result = if (latLng != null) {
+                disasterRepository.reportDisaster(report, latLng.first, latLng.second)
+            } else {
+                disasterRepository.reportDisaster(report)
+            }
 
             if (result.isSuccess) {
                 // Refresh the disaster list
@@ -136,7 +170,7 @@ class DisasterViewModel @Inject constructor(
                     it.copy(
                         isSubmitting = false,
                         submissionSuccess = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to report disaster"
+                        error = result.exceptionOrNull()?.message ?: "Gagal melaporkan bencana"
                     )
                 }
             }
@@ -171,7 +205,7 @@ class DisasterViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isUpdating = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to update disaster status"
+                        error = result.exceptionOrNull()?.message ?: "Gagal memperbarui status bencana"
                     )
                 }
             }
@@ -200,7 +234,7 @@ class DisasterViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to get nearby disasters"
+                        error = result.exceptionOrNull()?.message ?: "Gagal mendapatkan bencana terdekat"
                     )
                 }
             }
@@ -218,6 +252,10 @@ class DisasterViewModel @Inject constructor(
             )
         }
     }
+
+    fun clearMessages() {
+        _uiState.update { it.copy(error = null, success = null) }
+    }
 }
 
 /**
@@ -229,10 +267,12 @@ data class DisasterUiState(
     val nearbyDisasters: List<Disaster> = emptyList(),
     val selectedDisaster: Disaster? = null,
     val selectedType: DisasterType? = null,
+    val users: List<User> = emptyList(),
     val isLoading: Boolean = false,
     val isLoadingDetail: Boolean = false,
     val isSubmitting: Boolean = false,
     val isUpdating: Boolean = false,
     val submissionSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val success: String? = null
 )

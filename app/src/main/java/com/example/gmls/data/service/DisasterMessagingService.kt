@@ -128,10 +128,10 @@ class DisasterMessagingService : FirebaseMessagingService() {
             // Emergency channel (high importance)
             val emergencyChannel = NotificationChannel(
                 EMERGENCY_CHANNEL_ID,
-                "Emergency Alerts",
+                "Peringatan Darurat",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Critical emergency alerts that require immediate attention"
+                description = "Peringatan darurat kritis yang memerlukan perhatian segera"
                 enableLights(true)
                 enableVibration(true)
             }
@@ -139,10 +139,10 @@ class DisasterMessagingService : FirebaseMessagingService() {
             // Disaster channel (high importance)
             val disasterChannel = NotificationChannel(
                 DISASTER_CHANNEL_ID,
-                "Disaster Alerts",
+                "Peringatan Bencana",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Important alerts about disasters in your area"
+                description = "Peringatan penting tentang bencana di daerah Anda"
                 enableLights(true)
                 enableVibration(true)
             }
@@ -150,10 +150,10 @@ class DisasterMessagingService : FirebaseMessagingService() {
             // Default channel (default importance)
             val defaultChannel = NotificationChannel(
                 DEFAULT_CHANNEL_ID,
-                "General Notifications",
+                "Notifikasi Umum",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "General app notifications"
+                description = "Notifikasi umum aplikasi"
             }
 
             // Register the channels with the system

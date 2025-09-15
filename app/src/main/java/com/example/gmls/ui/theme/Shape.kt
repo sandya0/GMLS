@@ -4,12 +4,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
-// Define shapes for UI elements
+// Modern shapes with consistent rounded corners following current design trends
 val Shapes = Shapes(
-    // Buttons, text fields, and smaller elements
-    small = RoundedCornerShape(4.dp),
-    // Cards, dialogs, and medium-sized containers
-    medium = RoundedCornerShape(8.dp),
-    // Bottom sheets, large containers
-    large = RoundedCornerShape(12.dp)
+    // Small elements: buttons, chips, small cards
+    small = RoundedCornerShape(12.dp),
+    // Medium elements: cards, dialogs, input fields
+    medium = RoundedCornerShape(16.dp),
+    // Large elements: bottom sheets, large containers, modals
+    large = RoundedCornerShape(24.dp)
 )
+
+// Additional custom shapes for specific use cases
+val ExtraSmallShape = RoundedCornerShape(8.dp) // For very small elements
+val ExtraLargeShape = RoundedCornerShape(32.dp) // For hero sections
+val CircularShape = RoundedCornerShape(50) // For fully rounded elements
+val TopRoundedShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) // For bottom sheets

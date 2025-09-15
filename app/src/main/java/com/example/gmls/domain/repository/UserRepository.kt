@@ -60,10 +60,28 @@ interface UserRepository {
     suspend fun updateUserProfile(userId: String, updates: Map<String, Any>): Result<Unit>
 
     /**
+     * Update user's current location
+     * @param userId The ID of the user
+     * @param latitude The latitude coordinate
+     * @param longitude The longitude coordinate
+     */
+    suspend fun updateUserLocation(userId: String, latitude: Double, longitude: Double): Result<Unit>
+
+    /**
      * Save the FCM token for push notifications
      * @param token The FCM token
      */
     suspend fun saveFCMToken(token: String): Result<Unit>
 
+    /**
+     * Get the auth state flow for observing authentication changes
+     * @return Flow of FirebaseUser or null
+     */
     fun getAuthStateFlow(): Flow<FirebaseUser?>
+    
+    /**
+     * Get all users (admin only)
+     * @return List of all users
+     */
+    suspend fun getAllUsers(): List<User>
 }

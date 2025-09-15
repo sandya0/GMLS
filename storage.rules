@@ -1,0 +1,164 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for GMLS (Geological Monitoring & Location System)
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is verified
+    function isVerified() {
+      return request.auth != null &&
+             firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isVerified == true;
+    }
+    
+    // Helper function to check if user is active
+    function isActive() {
+      return request.auth != null &&
+             firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isActive != false;
+    }
+    
+    // Helper function to validate file types
+    function isValidImageType() {
+      return request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    }
+    
+    // Helper function to validate file size (10MB limit)
+    function isValidFileSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Disaster images - Enhanced security
+    match /disaster_images/{imageId} {
+      allow read: if isAuthenticated();
+      
+      allow write: if isAuthenticated() && 
+                     isActive() && 
+                     isValidImageType() && 
+                     isValidFileSize() &&
+                     (isAdmin() || 
+                      resource == null || // Allow creation
+                      imageId.matches('.*_' + request.auth.uid + '_.*')); // User can only modify their own images
+      
+      allow delete: if isAuthenticated() && 
+                      (isAdmin() || 
+                       imageId.matches('.*_' + request.auth.uid + '_.*'));
+    }
+    
+    // User profile pictures
+    match /profile_pictures/{userId} {
+      allow read: if isAuthenticated();
+      
+      allow write: if isAuthenticated() && 
+                     isActive() &&
+                     isValidImageType() && 
+                     isValidFileSize() &&
+                     (request.auth.uid == userId || isAdmin());
+      
+      allow delete: if isAuthenticated() && 
+                      (request.auth.uid == userId || isAdmin());
+    }
+    
+    // Resource documents and files
+    match /resources/{resourceId} {
+      allow read: if isAuthenticated();
+      
+      allow write: if isAuthenticated() && 
+                     isActive() &&
+                     request.resource.size < 50 * 1024 * 1024 && // 50MB limit for documents
+                     (isAdmin() || isVerified());
+      
+      allow delete: if isAdmin();
+    }
+    
+    // Emergency response documents
+    match /emergency_docs/{docId} {
+      allow read: if isAuthenticated() && (isVerified() || isAdmin());
+      
+      allow write: if isAuthenticated() && 
+                     isActive() &&
+                     request.resource.size < 20 * 1024 * 1024 && // 20MB limit
+                     isAdmin();
+      
+      allow delete: if isAdmin();
+    }
+    
+    // Admin uploads (reports, exports, etc.)
+    match /admin_uploads/{uploadId} {
+      allow read: if isAdmin();
+      
+      allow write: if isAdmin() &&
+                     request.resource.size < 100 * 1024 * 1024; // 100MB limit for admin files
+      
+      allow delete: if isAdmin();
+    }
+    
+    // Temporary uploads (for processing)
+    match /temp_uploads/{uploadId} {
+      allow read: if isAuthenticated() && 
+                    uploadId.matches('.*_' + request.auth.uid + '_.*');
+      
+      allow write: if isAuthenticated() && 
+                     isActive() &&
+                     isValidFileSize() &&
+                     uploadId.matches('.*_' + request.auth.uid + '_.*');
+      
+      allow delete: if isAuthenticated() && 
+                      (uploadId.matches('.*_' + request.auth.uid + '_.*') || isAdmin());
+    }
+    
+    // User document uploads (ID cards, certificates, etc.)
+    match /user_documents/{userId}/{documentId} {
+      allow read: if isAuthenticated() && 
+                    (request.auth.uid == userId || isAdmin());
+      
+      allow write: if isAuthenticated() && 
+                     isActive() &&
+                     request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+                     request.auth.uid == userId;
+      
+      allow delete: if isAuthenticated() && 
+                      (request.auth.uid == userId || isAdmin());
+    }
+    
+    // Disaster report attachments
+    match /disaster_attachments/{disasterId}/{attachmentId} {
+      allow read: if isAuthenticated();
+      
+      allow write: if isAuthenticated() && 
+                     isActive() &&
+                     isValidFileSize() &&
+                     (isAdmin() || 
+                      firestore.exists(/databases/(default)/documents/disasters/$(disasterId)) &&
+                      firestore.get(/databases/(default)/documents/disasters/$(disasterId)).data.reportedBy == request.auth.uid);
+      
+      allow delete: if isAuthenticated() && 
+                      (isAdmin() || 
+                       firestore.exists(/databases/(default)/documents/disasters/$(disasterId)) &&
+                       firestore.get(/databases/(default)/documents/disasters/$(disasterId)).data.reportedBy == request.auth.uid);
+    }
+    
+    // System backups (admin only)
+    match /system_backups/{backupId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Default deny rule for any other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 

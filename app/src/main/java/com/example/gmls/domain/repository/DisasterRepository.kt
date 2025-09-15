@@ -40,6 +40,15 @@ interface DisasterRepository {
     suspend fun reportDisaster(report: DisasterReport): Result<String>
 
     /**
+     * Report a new disaster with coordinates
+     * @param report The disaster report data
+     * @param latitude The latitude
+     * @param longitude The longitude
+     * @return Disaster ID if successful
+     */
+    suspend fun reportDisaster(report: DisasterReport, latitude: Double, longitude: Double): Result<String>
+
+    /**
      * Update the status of a disaster
      * @param disasterId The disaster ID
      * @param status The new status

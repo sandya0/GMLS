@@ -1,3 +1,956 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App Info -->
     <string name="app_name">GMLS</string>
-</resources>
+    <string name="gmls_full_name">Gugus Mitigasi Lebak Selatan</string>
+    
+    <!-- Navigation -->
+    <string name="dashboard">Beranda</string>
+    <string name="disasters">Bencana</string>
+    <string name="map">Peta</string>
+    <string name="report_disaster">Laporkan Bencana</string>
+    <string name="profile">Profil</string>
+    <string name="resources">Sumber Daya</string>
+    <string name="settings">Pengaturan</string>
+    <string name="emergency">Darurat</string>
+    <string name="response">Tanggap Bencana</string>
+    <string name="menu">Menu</string>
+    <string name="statistics">Statistik</string>
+    
+    <!-- Common Actions -->
+    <string name="refresh">Perbarui</string>
+    <string name="search">Cari</string>
+    <string name="cancel">Batal</string>
+    <string name="save">Simpan</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Hapus</string>
+    <string name="submit">Kirim</string>
+    <string name="back">Kembali</string>
+    <string name="next">Selanjutnya</string>
+    <string name="previous">Sebelumnya</string>
+    <string name="close">Tutup</string>
+    <string name="ok">OK</string>
+    <string name="yes">Ya</string>
+    <string name="no">Tidak</string>
+    <string name="loading">Memuat...</string>
+    <string name="go_back">Kembali</string>
+    <string name="retry">Coba Lagi</string>
+    
+    <!-- Dashboard -->
+    <string name="welcome_back">Selamat datang kembali</string>
+    <string name="user">Pengguna</string>
+    <string name="reported">Dilaporkan</string>
+    <string name="disasters_you_reported">Bencana yang Anda laporkan</string>
+    <string name="resolved">Selesai</string>
+    <string name="disasters_resolved">Bencana terselesaikan</string>
+    <string name="in_progress">Dalam Proses</string>
+    <string name="disasters_in_progress">Bencana dalam proses</string>
+    <string name="recent_disasters">Bencana Terkini</string>
+    <string name="verified">Terverifikasi</string>
+    <string name="report_disaster_fab">Laporkan Bencana</string>
+    
+    <!-- Disaster Management -->
+    <string name="disaster_type">Jenis Bencana</string>
+    <string name="disaster_title">Judul Bencana</string>
+    <string name="description">Deskripsi</string>
+    <string name="describe_disaster">Deskripsikan bencana</string>
+    <string name="location">Lokasi</string>
+    <string name="address">Alamat</string>
+    <string name="coordinates">Koordinat</string>
+    <string name="estimated_affected_people">Perkiraan orang terdampak</string>
+    <string name="upload_images_optional">Unggah Gambar (Opsional)</string>
+    <string name="report_disaster_title">Laporkan Bencana</string>
+    <string name="report_disaster_button">Laporkan Bencana</string>
+    
+    <!-- Filtering and Search -->
+    <string name="filter_by_disaster_type">Filter berdasarkan jenis bencana</string>
+    <string name="filter_disasters">Filter Bencana</string>
+    <string name="all">Semua</string>
+    <string name="search_disasters">Cari Bencana</string>
+    <string name="search_disasters_placeholder">Cari bencana...</string>
+    <string name="close_search">Tutup Pencarian</string>
+    <string name="no_disasters_found">Tidak ada bencana ditemukan</string>
+    <string name="no_disasters_reported_in_category">Tidak ada bencana dilaporkan dalam kategori ini</string>
+    <string name="no_disasters_of_type">Tidak ada bencana jenis ini</string>
+    <string name="no_disasters_reported">Tidak ada bencana dilaporkan</string>
+    <string name="all_types_filter">Semua Jenis</string>
+    <string name="all_levels_filter">Semua Tingkat</string>
+    
+    <!-- Location -->
+    <string name="use_my_current_location">Gunakan lokasi saya saat ini</string>
+    <string name="fetching_location">Mengambil lokasi...</string>
+    <string name="current_location_will_be_used">Lokasi saat ini akan digunakan</string>
+    <string name="location_address_or_description">Alamat lokasi atau deskripsi</string>
+    <string name="pick_on_map">Pilih di Peta</string>
+    <string name="selected_coordinates">Koordinat Terpilih</string>
+    <string name="pick_location_on_map">Pilih Lokasi di Peta</string>
+    <string name="confirm_location">Konfirmasi Lokasi</string>
+    
+    <!-- Logout Dialog -->
+    <string name="confirm_logout">Konfirmasi Keluar</string>
+    <string name="logout_confirmation_message">Apakah Anda yakin ingin keluar? Anda perlu masuk lagi untuk mengakses akun Anda.</string>
+    <string name="yes_logout">Ya, Keluar</string>
+    <string name="logout_button">Keluar</string>
+    
+    <!-- Resources -->
+    <string name="resources_coming_soon">Sumber daya akan segera hadir</string>
+    <string name="disaster_reports">Laporan Bencana</string>
+    <string name="report_a_disaster">Laporkan Bencana</string>
+    <string name="emergency_resources_title">Sumber Daya Darurat</string>
+    
+    <!-- Settings -->
+    <string name="theme">Tema</string>
+    <string name="theme_light">Terang</string>
+    <string name="theme_dark">Gelap</string>
+    <string name="theme_system">Default Sistem</string>
+    <string name="push_notifications">Notifikasi Push</string>
+    <string name="email_notifications">Notifikasi Email</string>
+    <string name="privacy_security">Privasi &amp; Keamanan</string>
+    <string name="location_sharing">Berbagi Lokasi</string>
+    <string name="location_sharing_desc">Izinkan berbagi lokasi untuk pelaporan bencana</string>
+    <string name="analytics_data">Data Analitik</string>
+    <string name="analytics_data_desc">Bantu tingkatkan aplikasi dengan berbagi data penggunaan</string>
+    <string name="about_gmls">Tentang GMLS</string>
+    <string name="who_we_are">Siapa Kami</string>
+    <string name="our_mission">Misi Kami</string>
+    <string name="contact_information">Informasi Kontak</string>
+    <string name="version">Versi 1.0.0</string>
+    <string name="copyright">Hak Cipta 2025, GMLS. Semua Hak Dilindungi.</string>
+    
+    <!-- About GMLS Content -->
+    <string name="gmls_who_we_are">Gugus Mitigasi Lebak Selatan adalah sebuah kelompok kecil masyarakat yang menyumbangsihkan diri untuk membantu masyarakat Lebak Selatan bersiap dan tangguh menghadapi potensi risiko gempabumi dan tsunami.</string>
+    <string name="gmls_mission">Membantu 5.744 desa di Indonesia yang berada di zona rawan tsunami menjadi Resilient Tsunami Ready Community. Kami adalah komunitas berbasis masyarakat yang bergerak di bidang mitigasi kebencanaan di Lebak Selatan.</string>
+    <string name="gmls_address">Villa Hejo Kiarapayung, Kp. Kiarapayung, RT 004 RW 004, Desa/Kec. Panggarangan, Kab. Lebak, Banten - 42392</string>
+    <string name="gmls_email">gugusmitigasibaksel@gmail.com</string>
+    <string name="gmls_phone">085 - 888 - 200 - 600</string>
+    <string name="gmls_website">gmls.org</string>
+    
+    <!-- Authentication -->
+    <string name="login">Masuk</string>
+    <string name="create_account">Buat Akun</string>
+    <string name="forgot_password">Lupa Kata Sandi?</string>
+    <string name="or">ATAU</string>
+    <string name="email">Email</string>
+    <string name="password">Kata Sandi</string>
+    <string name="confirm_password">Konfirmasi Kata Sandi</string>
+    <string name="full_name">Nama Lengkap</string>
+    
+    <!-- Profile -->
+    <string name="my_profile">Profil Saya</string>
+    <string name="full_name_label">Nama Lengkap</string>
+    <string name="email_label">Email</string>
+    <string name="phone_number_label">Nomor Telepon</string>
+    <string name="national_id_label">NIK</string>
+    <string name="gender_label">Jenis Kelamin</string>
+    <string name="date_of_birth_label">Tanggal Lahir</string>
+    <string name="family_card_number_label">Nomor KK</string>
+    <string name="place_of_birth_label">Tempat Lahir</string>
+    <string name="religion_dropdown_label">Agama</string>
+    <string name="marital_status_dropdown_label">Status Perkawinan</string>
+    <string name="family_relationship_dropdown_label">Hubungan Keluarga</string>
+    <string name="last_education_label">Pendidikan Terakhir</string>
+    <string name="occupation_dropdown_label">Pekerjaan</string>
+    <string name="economic_status_dropdown_label">Status Ekonomi</string>
+    <string name="latitude_label">Latitude</string>
+    <string name="longitude_label">Longitude</string>
+    <string name="blood_type_label">Golongan Darah</string>
+    <string name="medical_conditions_label">Kondisi Medis</string>
+    <string name="disabilities_label">Disabilitas</string>
+    <string name="emergency_contact_name_label">Nama Kontak Darurat</string>
+    <string name="emergency_contact_relationship_label">Hubungan</string>
+    <string name="emergency_contact_phone_label">Telepon Kontak Darurat</string>
+    <string name="name_label">Nama</string>
+    <string name="relationship_label">Hubungan</string>
+    <string name="age_label">Umur</string>
+    <string name="special_needs_label">Kebutuhan Khusus</string>
+    <string name="remove_member">Hapus Anggota</string>
+    <string name="add_household_member">Tambah Anggota Keluarga</string>
+    <string name="save_changes">Simpan Perubahan</string>
+    
+    <!-- Registration -->
+    <string name="basic_information">Informasi Dasar</string>
+    <string name="personal_details">Detail Pribadi</string>
+    <string name="date_of_birth">Tanggal Lahir</string>
+    <string name="gender">Jenis Kelamin</string>
+    <string name="complete_address">Alamat Lengkap</string>
+    <string name="optional_complete_address">Alamat Lengkap (Opsional)</string>
+    <string name="medical_information">Informasi Medis</string>
+    <string name="blood_type">Golongan Darah</string>
+    <string name="household_members_count">Jumlah Anggota Keluarga</string>
+    <string name="additional_information">Informasi Tambahan</string>
+    <string name="emergency_contact">Kontak Darurat</string>
+    <string name="location_access_agreement">Izinkan akses ke lokasi saya untuk pelaporan bencana</string>
+    <string name="terms_agreement">Saya setuju dengan Syarat dan Ketentuan</string>
+    <string name="create_account_title">Buat Akun</string>
+    <string name="national_id">NIK (Nomor Induk Kependudukan)</string>
+    <string name="family_card_number">Nomor KK (Kartu Keluarga)</string>
+    <string name="place_of_birth">Tempat Lahir</string>
+    <string name="phone_number">Nomor Telepon</string>
+    <string name="complete_address_indo">Alamat Lengkap</string>
+    <string name="medical_conditions_optional">Kondisi Medis (Opsional)</string>
+    <string name="disabilities_optional">Disabilitas (Opsional)</string>
+    <string name="number_of_household_members">Jumlah Anggota Keluarga</string>
+    <string name="emergency_contact_name">Nama Kontak Darurat</string>
+    <string name="relationship">Hubungan</string>
+    <string name="emergency_contact_phone">Telepon Kontak Darurat</string>
+    <string name="date_format_placeholder">DD/MM/YYYY</string>
+    
+    <!-- Media -->
+    <string name="add_image">Tambah Gambar</string>
+    <string name="take_photo">Ambil Foto</string>
+    <string name="submit_report">Kirim Laporan</string>
+    
+    <!-- Emergency -->
+    <string name="emergency_contacts">Kontak Darurat</string>
+    <string name="emergency_contacts_title">Kontak Darurat</string>
+    <string name="emergency_contacts_description">Ketuk kontak mana pun untuk langsung menelepon</string>
+    <string name="critical_emergency">DARURAT KRITIS</string>
+    <string name="high_priority">PRIORITAS TINGGI</string>
+    <string name="general_services">LAYANAN UMUM</string>
+    <string name="emergency_resources">Sumber Daya Darurat</string>
+    
+    <!-- Map -->
+    <string name="loading_map">Memuat Peta...</string>
+    <string name="location_permission_message">Berikan izin lokasi untuk melihat lokasi Anda di peta</string>
+    <string name="disaster_map_title">Peta Bencana</string>
+    <string name="grant_permission">Berikan Izin</string>
+    
+    <!-- Disaster Details -->
+    <string name="severity_text">Keparahan: %s</string>
+    <string name="people_affected">%d orang terdampak</string>
+    <string name="affected_count">%d terdampak</string>
+    <string name="images">Gambar</string>
+    <string name="disasters_found_count">%d bencana ditemukan</string>
+    <string name="share_button">Bagikan</string>
+    <string name="view_on_map">Lihat di Peta</string>
+    <string name="unable_to_share_try_again">Tidak dapat membagikan, coba lagi</string>
+    
+    <!-- Notifications -->
+    <string name="notifications">Notifikasi</string>
+    <string name="notifications_title">Notifikasi</string>
+    <string name="no_unread_notifications">Tidak ada notifikasi yang belum dibaca</string>
+    <string name="no_notifications_yet">Belum ada notifikasi</string>
+    <string name="all_notifications_read">Anda telah membaca semua notifikasi</string>
+    <string name="notifications_will_appear_here">Ketika Anda menerima notifikasi, mereka akan muncul di sini</string>
+    <string name="just_now">Baru saja</string>
+    <string name="minutes_ago">%d menit yang lalu</string>
+    <string name="hours_ago">%d jam yang lalu</string>
+    <string name="days_ago">%d hari yang lalu</string>
+    
+    <!-- Analytics -->
+    <string name="geographic_distribution">Distribusi Geografis</string>
+    <string name="disasters_by_location">Bencana berdasarkan Lokasi</string>
+    <string name="disaster_trends">Tren Bencana</string>
+    <string name="severity_distribution">Distribusi Keparahan</string>
+    <string name="user_analytics">Analitik Pengguna</string>
+    <string name="user_statistics">Statistik Pengguna</string>
+    <string name="user_metrics">Metrik Pengguna</string>
+    <string name="verification_rate">Tingkat Verifikasi</string>
+    <string name="location_enabled">Lokasi Diaktifkan</string>
+    <string name="analytics_report">Laporan Analitik</string>
+    <string name="report_copied_to_clipboard">Laporan disalin ke clipboard</string>
+    <string name="failed_to_copy_clipboard">Gagal menyalin ke clipboard</string>
+    
+    <!-- Admin Dashboard -->
+    <string name="admin_dashboard">Dashboard Admin</string>
+    <string name="emergency_contacts_nav">Kontak Darurat</string>
+    <string name="admin_control_panel">Panel Kontrol Admin</string>
+    <string name="user_management">Manajemen Pengguna</string>
+    <string name="manage_users">Kelola Pengguna</string>
+    <string name="admin_map">Peta Admin</string>
+    <string name="disaster_management">Manajemen Bencana</string>
+    <string name="system_settings">Pengaturan Sistem</string>
+    <string name="user_management_title">Manajemen Pengguna</string>
+    <string name="active_users">Pengguna Aktif</string>
+    <string name="total_users_label">Total Pengguna</string>
+    <string name="verified_users">Pengguna Terverifikasi</string>
+    <string name="admin_users">Pengguna Admin</string>
+    <string name="recent_activity_title">Aktivitas Terbaru</string>
+    <string name="monthly_trends_title">Tren Bulanan</string>
+    <string name="quick_stats_title">Statistik Cepat</string>
+    <string name="last_7_days">7 Hari Terakhir</string>
+    <string name="system_health_dashboard">Kesehatan Sistem</string>
+    <string name="response_time_metric">Waktu Respons</string>
+    <string name="active_incidents_metric">Insiden Aktif</string>
+    <string name="system_load_metric">Beban Sistem</string>
+    <string name="monthly_trends_chart_title">Tren Bulanan</string>
+    <string name="last_6_months_label">6 Bulan Terakhir</string>
+    <string name="critical_alerts_stat">Peringatan Kritis</string>
+    <string name="avg_response_stat">Respons Rata-rata</string>
+    <string name="new_users_stat">Pengguna Baru</string>
+    <string name="resolved_today_stat">Diselesaikan Hari Ini</string>
+    <string name="hours_suffix">j</string>
+    <string name="verified_label">Terverifikasi</string>
+    <string name="active_label">Aktif</string>
+    <string name="admin_label">Admin</string>
+    <string name="users_count_format" formatted="false">%d dari %d pengguna</string>
+    
+    <!-- Crash Reports -->
+    <string name="crash_reports_title">Laporan Crash</string>
+    <string name="clear_crash_data_title">Hapus Data Crash</string>
+    <string name="clear_crash_data_message">Apakah Anda yakin ingin menghapus semua data crash?</string>
+    <string name="clear_button">Hapus</string>
+    <string name="no_crashes_recorded">Tidak ada crash yang tercatat</string>
+    <string name="app_running_smoothly">Aplikasi Anda berjalan dengan lancar!</string>
+    <string name="system_health">Kesehatan Sistem</string>
+    <string name="crash_statistics">Statistik Crash</string>
+    <string name="total_crashes">Total Crash</string>
+    <string name="last_crash">Crash Terakhir</string>
+    <string name="never">Tidak Pernah</string>
+    <string name="unknown_status">Tidak Diketahui</string>
+    <string name="excellent_status">Sangat Baik</string>
+    <string name="good_status">Baik</string>
+    <string name="fair_status">Cukup</string>
+    <string name="poor_status">Buruk</string>
+    <string name="app_unstable_warning">⚠️ Aplikasi saat ini dalam keadaan tidak stabil</string>
+    <string name="expand">Perluas</string>
+    <string name="collapse">Tutup</string>
+    <string name="message_label">Pesan:</string>
+    <string name="status_label">Status: %s</string>
+    
+    <!-- Gender Options -->
+    <string name="male">Laki-laki</string>
+    <string name="female">Perempuan</string>
+    
+    <!-- Religion Options -->
+    <string name="islam">Islam</string>
+    <string name="christian">Kristen</string>
+    <string name="catholic">Katolik</string>
+    <string name="hindu">Hindu</string>
+    <string name="buddhist">Buddha</string>
+    <string name="confucian">Konghucu</string>
+    <string name="other">Lainnya</string>
+    
+    <!-- Marital Status -->
+    <string name="single">Belum Kawin</string>
+    <string name="married">Kawin</string>
+    <string name="divorced">Cerai Hidup</string>
+    <string name="widowed">Cerai Mati</string>
+    
+    <!-- Family Relationship Status -->
+    <string name="head_of_family">Kepala Keluarga</string>
+    <string name="wife">Istri</string>
+    <string name="child">Anak</string>
+    <string name="parent">Orang Tua</string>
+    
+    <!-- Education Levels -->
+    <string name="no_school">Tidak/Belum Sekolah</string>
+    <string name="elementary">SD</string>
+    <string name="junior_high">SMP</string>
+    <string name="senior_high">SMA/SMK</string>
+    <string name="diploma">Diploma</string>
+    <string name="bachelor">Sarjana</string>
+    <string name="postgraduate">Pascasarjana</string>
+    
+    <!-- Occupations -->
+    <string name="student">Pelajar</string>
+    <string name="college_student">Mahasiswa</string>
+    <string name="civil_servant">PNS</string>
+    <string name="military_police">TNI/Polri</string>
+    <string name="private_employee">Karyawan Swasta</string>
+    <string name="entrepreneur">Wiraswasta</string>
+    <string name="farmer">Petani</string>
+    <string name="fisherman">Nelayan</string>
+    
+    <!-- Economic Status -->
+    <string name="very_poor">Sangat Miskin</string>
+    <string name="poor">Miskin</string>
+    <string name="middle_class">Menengah</string>
+    <string name="wealthy">Kaya</string>
+    
+    <!-- Validation Messages -->
+    <string name="full_name_required">Nama lengkap wajib diisi</string>
+    <string name="email_required">Email wajib diisi</string>
+    <string name="valid_email_required">Masukkan email yang valid</string>
+    <string name="password_required">Kata sandi wajib diisi</string>
+    <string name="password_min_length">Kata sandi minimal 8 karakter</string>
+    <string name="confirm_password_required">Konfirmasi kata sandi wajib diisi</string>
+    <string name="passwords_do_not_match">Kata sandi tidak cocok</string>
+    <string name="date_of_birth_required">Tanggal lahir wajib diisi</string>
+    <string name="must_be_18_years_old">Usia minimal 18 tahun</string>
+    <string name="gender_required">Jenis kelamin wajib dipilih</string>
+    <string name="national_id_required">NIK wajib diisi</string>
+    <string name="national_id_16_digits">NIK harus 16 digit</string>
+    <string name="family_card_required">Nomor KK wajib diisi</string>
+    <string name="family_card_16_digits">Nomor KK harus 16 digit</string>
+    <string name="place_of_birth_required">Tempat lahir wajib diisi</string>
+    <string name="phone_number_required">Nomor telepon wajib diisi</string>
+    <string name="valid_phone_required">Masukkan nomor telepon yang valid</string>
+    
+    <!-- Error and success messages -->
+    <string name="failed_to_share_file">Gagal membagikan file: %s</string>
+    <string name="no_message">Tidak ada pesan</string>
+    <string name="user_not_logged_in">Pengguna belum masuk</string>
+    <string name="profile_updated_successfully">Profil berhasil diperbarui</string>
+    <string name="failed_to_load_profile">Gagal memuat profil</string>
+    <string name="failed_to_update_profile">Gagal memperbarui profil</string>
+    <string name="failed_to_load_notifications">Gagal memuat notifikasi</string>
+    <string name="failed_to_load_disasters">Gagal memuat bencana</string>
+    <string name="failed_to_load_analytics_data">Gagal memuat data analitik: %s</string>
+    <string name="failed_to_load_more_audit_logs">Gagal memuat lebih banyak log audit</string>
+    <string name="failed_to_load_users">Gagal memuat pengguna</string>
+    <string name="failed_to_save_fcm_token">Gagal menyimpan token FCM</string>
+    <string name="disasters_loaded_successfully">Bencana berhasil dimuat</string>
+    <string name="analytics_data_loaded">Data analitik dimuat</string>
+    <string name="error_loading_analytics">Error memuat analitik</string>
+    <string name="error_loading_notifications">Error memuat notifikasi</string>
+    <string name="error_loading_disasters">Error memuat bencana</string>
+    <string name="error_loading_admin_data">Error memuat data admin</string>
+    <string name="stack_trace_unavailable">Stack trace tidak tersedia</string>
+    <string name="emergency_contact_updated">Informasi kontak darurat Anda telah berhasil diperbarui.</string>
+    <string name="affected_text">terdampak</string>
+    <string name="affected_label">Terdampak:</string>
+    <string name="people_suffix">orang</string>
+    
+    <!-- Additional common strings -->
+    <string name="start_typing_search">Mulai ketik untuk mencari bencana...</string>
+    <string name="disasters_title">Bencana</string>
+    <string name="loading_disasters">Memuat bencana...</string>
+    <string name="action_completed_successfully">Tindakan berhasil diselesaikan!</string>
+    <string name="no_disasters_found_message">Tidak ada bencana yang ditemukan sesuai kriteria Anda.</string>
+    <string name="try_adjusting_search_filters">Coba sesuaikan pencarian atau filter Anda</string>
+    <string name="no_disasters_found_dashboard">Tidak ada bencana ditemukan</string>
+    <string name="no_disasters_match_criteria">Tidak ada bencana yang sesuai kriteria pencarian Anda</string>
+    <string name="no_recent_disasters_area">Tidak ada bencana terkini di area Anda</string>
+    <string name="no_location_data_available">Tidak ada data lokasi tersedia</string>
+    <string name="no_trend_data_available">Tidak ada data tren tersedia</string>
+    <string name="no_admin_activity_logs">Tidak ada log aktivitas admin ditemukan.</string>
+    <string name="no_disasters_found_list">Tidak ada bencana ditemukan</string>
+    <string name="no_disasters_reported_area">Belum ada bencana yang dilaporkan di area Anda</string>
+    
+    <!-- Additional strings -->
+    <string name="total_users">Total Pengguna</string>
+    <string name="active_disasters">Bencana Aktif</string>
+    <string name="inactive_users">Pengguna Tidak Aktif</string>
+    <string name="incidents_text">insiden</string>
+    <string name="users_text">pengguna</string>
+    <string name="of_text">dari</string>
+    <string name="this_month">bulan ini</string>
+    <string name="ongoing">sedang berlangsung</string>
+    <string name="total_text">total</string>
+    <string name="verified_text">terverifikasi</string>
+    <string name="users_text_analytics">pengguna</string>
+    <string name="admin_users_analytics">Pengguna Admin</string>
+    <string name="regular_users">Pengguna Reguler</string>
+    <string name="system_administrators">administrator sistem</string>
+    <string name="resolved_issues">Masalah Terselesaikan</string>
+    <string name="events_this_week">kejadian minggu ini</string>
+    <string name="active_users_count">%d aktif</string>
+    <string name="new_users_this_week">+%d minggu ini</string>
+    <string name="of_total_format">dari %d total</string>
+    <string name="active_disasters_count">%d aktif</string>
+    <string name="new_disasters_this_week">+%d minggu ini</string>
+    <string name="last_7_days_filter">7 Hari Terakhir</string>
+    <string name="last_30_days_filter">30 Hari Terakhir</string>
+    <string name="all_time_filter">Semua Waktu</string>
+    <string name="disaster_type_breakdown">Jenis Bencana</string>
+    <string name="user_verification_status">Status Verifikasi Pengguna</string>
+    <string name="filters_label">Filter</string>
+    <string name="clear_filters">Hapus Filter</string>
+    <string name="all_roles_filter">Semua Peran</string>
+    <string name="users_filter">Pengguna</string>
+    <string name="admins_filter">Admin</string>
+    <string name="all_status_filter">Semua Status</string>
+    <string name="active_filter">Aktif</string>
+    <string name="verified_filter">Terverifikasi</string>
+    <string name="search_users_placeholder">Cari pengguna...</string>
+    <string name="clear_search">Hapus pencarian</string>
+    <string name="refresh_data">Segarkan data</string>
+    <string name="user_distribution_by_location">Distribusi Pengguna berdasarkan Lokasi</string>
+    <string name="disaster_analytics_title">Analitik Bencana</string>
+    <string name="disasters_by_type">Bencana berdasarkan Jenis</string>
+    <string name="monthly_disaster_trend">Tren Bencana Bulanan</string>
+    <string name="new_users_7d">Pengguna Baru (7h)</string>
+    <string name="high">Tinggi</string>
+    <string name="normal">Normal</string>
+    <string name="stable">Stabil</string>
+    <string name="status_prefix">Status: %s</string>
+    <string name="stack_trace_label">Stack Trace:</string>
+    <string name="no_message_default">Tidak ada pesan</string>
+    
+    <!-- Google Play Services -->
+    <string name="authentication_issue_google_play">Masalah autentikasi Google Play Services</string>
+    <string name="error_google_play_offline">Error: Google Play Services offline</string>
+    <string name="google_play_services_missing">Google Play Services tidak tersedia</string>
+    <string name="google_play_services_update_required">Google Play Services perlu diperbarui</string>
+    <string name="google_play_services_disabled">Google Play Services dinonaktifkan</string>
+    <string name="google_play_auth_issue">Masalah autentikasi Google Play</string>
+    <string name="location_permission_required">Izin lokasi diperlukan</string>
+    <string name="unexpected_error_occurred">Terjadi kesalahan yang tidak terduga</string>
+    <string name="error_occurred_please_try_again">Terjadi kesalahan, silakan coba lagi</string>
+    
+    <!-- Missing strings for MainActivity and other components -->
+    <string name="failed_to_load_theme_preferences">Gagal memuat preferensi tema</string>
+    <string name="application_failed_to_start">Aplikasi gagal dimulai</string>
+    <string name="initializing_application">Menginisialisasi aplikasi</string>
+    <string name="detail_address_label">Alamat Detail</string>
+    <string name="address_example_placeholder">Contoh: Jl. Merdeka No. 123, RT 01/RW 02</string>
+    <string name="total_disasters_label">Total Bencana</string>
+    <string name="analytics">Analitik</string>
+    <string name="view_disaster_analytics">Lihat Analitik Bencana</string>
+    <string name="monitor_locations">Pantau Lokasi</string>
+    <string name="manage_disasters">Kelola Bencana</string>
+    <string name="view_analytics">Lihat Analitik</string>
+    <string name="google_play_error">Error Google Play</string>
+    <string name="location_required">Lokasi Diperlukan</string>
+    <string name="location_field">Bidang Lokasi</string>
+    <string name="not_context_composable_function">Tidak dalam konteks fungsi @Composable</string>
+    
+    <!-- Additional missing strings -->
+    <string name="system_configuration">Konfigurasi Sistem</string>
+    <string name="clear_all">Hapus Semua</string>
+    <string name="registration_failed">Registrasi Gagal</string>
+    <string name="report_failed_title">Laporan Gagal</string>
+    <string name="unknown_error_occurred">Terjadi kesalahan yang tidak diketahui</string>
+    <string name="create_admin_user">Buat Pengguna Admin</string>
+    <string name="please_fill_all_fields">Silakan isi semua bidang</string>
+    <string name="admin_created_title">Admin Berhasil Dibuat</string>
+    <string name="admin_created_message">Pengguna admin berhasil dibuat</string>
+    <string name="go_to_dashboard">Ke Dashboard</string>
+    <string name="administrator_activity_logs">Log Aktivitas Administrator</string>
+    <string name="add_new_user_title">Tambah Pengguna Baru</string>
+    <string name="view_details_button">Lihat Detail</string>
+    <string name="account_inactive">Akun Tidak Aktif</string>
+    
+    <!-- Missing Admin Dashboard strings -->
+    <string name="system_overview">Gambaran Sistem</string>
+    <string name="analytics_dashboard">Dashboard Analitik</string>
+    <string name="export_excel">Ekspor Excel</string>
+    <string name="user_management_section">Bagian Manajemen Pengguna</string>
+    <string name="view_all">Lihat Semua</string>
+    <string name="system_activity">Aktivitas Sistem</string>
+    <string name="welcome_back_admin">Selamat datang kembali, Admin</string>
+    <string name="verify_user_tooltip_text">Verifikasi pengguna</string>
+    <string name="verify_user_action">Verifikasi Pengguna</string>
+    <string name="block_user_tooltip">Blokir pengguna</string>
+    <string name="restore_user_tooltip">Pulihkan pengguna</string>
+    <string name="block_user_action">Blokir Pengguna</string>
+    <string name="restore_user_action">Pulihkan Pengguna</string>
+    <string name="view_details_tooltip_text">Lihat detail pengguna</string>
+    <string name="view_details_action">Lihat Detail</string>
+    <string name="not_provided">Tidak Disediakan</string>
+    <string name="manage_disaster_reports_title">Kelola Laporan Bencana</string>
+    <string name="search_disasters_location_type_label">Cari bencana berdasarkan lokasi atau jenis...</string>
+    <string name="all_types_label">Semua Jenis</string>
+    <string name="all_statuses_label">Semua Status</string>
+    <string name="disasters_found_format">%d bencana ditemukan</string>
+    <string name="no_disasters_reported_yet">Belum ada bencana yang dilaporkan</string>
+    <string name="update_disaster_status_title">Perbarui Status Bencana</string>
+    <string name="update_status_for_disaster">Perbarui status untuk bencana di %s</string>
+    <string name="update_status_button">Perbarui Status</string>
+    <string name="recent_activity">Aktivitas Terkini</string>
+    <string name="new_reports">Laporan Baru</string>
+    <string name="new_users">Pengguna Baru</string>
+    <string name="admin_actions">Tindakan Admin</string>
+    <string name="users_requiring_attention">Pengguna yang Memerlukan Perhatian</string>
+    <string name="all_users_good_standing">Semua pengguna dalam kondisi baik</string>
+    <string name="unverified_users">Pengguna Belum Terverifikasi</string>
+    <string name="needs_verification">Perlu Verifikasi</string>
+    <string name="verify_button_text">Verifikasi</string>
+    <string name="activate_button">Aktifkan</string>
+    <string name="total_incidents">Total Insiden</string>
+    <string name="response_rate">Tingkat Respons</string>
+    <string name="vs_last_month">vs bulan lalu</string>
+    
+    <!-- Admin Sub Screens -->
+    <string name="enter_user_details">Masukkan detail pengguna</string>
+    <string name="full_name_required_asterisk">Nama Lengkap *</string>
+    <string name="email_address_required_asterisk">Alamat Email *</string>
+    <string name="phone_number_optional">Nomor Telepon (Opsional)</string>
+    <string name="temporary_password_optional">Kata Sandi Sementara (Opsional)</string>
+    <string name="min_6_chars_or_blank">Min 6 karakter atau kosong</string>
+    <string name="hide_password">Sembunyikan kata sandi</string>
+    <string name="show_password">Tampilkan kata sandi</string>
+    <string name="add_user_button_text">Tambah Pengguna</string>
+    <string name="no_audit_logs_found">Tidak ada log audit ditemukan</string>
+    <string name="load_more_logs">Muat Lebih Banyak Log</string>
+    
+    <!-- User Management Screen -->
+    <string name="add_user_button">Tambah Pengguna</string>
+    <string name="user_details_title">Detail Pengguna</string>
+    <string name="user_name_format">Nama: %s</string>
+    <string name="user_email_format">Email: %s</string>
+    <string name="user_phone_format">Telepon: %s</string>
+    <string name="user_role_format">Peran: %s</string>
+    <string name="user_status_format">Status: %s</string>
+    <string name="active_status">Aktif</string>
+    <string name="inactive_status">Tidak Aktif</string>
+    <string name="user_verified_format">Terverifikasi: %s</string>
+    <string name="verify_button">Verifikasi</string>
+    <string name="close_button">Tutup</string>
+    <string name="add_user_dialog_button">Tambah Pengguna</string>
+    
+    <!-- Analytics Components -->
+    <string name="admins_label">Admin</string>
+    <string name="with_location_label">Dengan Lokasi</string>
+    <string name="community_members">Anggota Komunitas</string>
+    
+    <!-- Auth Screens -->
+    <string name="please_enter_valid_email">Silakan masukkan email yang valid</string>
+    <string name="password_cannot_be_empty">Kata sandi tidak boleh kosong</string>
+    <string name="password_must_be_at_least_6_chars">Kata sandi minimal 6 karakter</string>
+    <string name="terms_agreement_required">Persetujuan syarat dan ketentuan diperlukan</string>
+    <string name="religion_label">Agama</string>
+    <string name="marital_status_label">Status Perkawinan</string>
+    <string name="family_relationship_label">Hubungan Keluarga</string>
+    <string name="address_required">Alamat wajib diisi</string>
+    <string name="religion_required">Agama wajib dipilih</string>
+    <string name="marital_status_required">Status perkawinan wajib dipilih</string>
+    <string name="family_relationship_required">Hubungan keluarga wajib dipilih</string>
+    <string name="education_required">Pendidikan wajib dipilih</string>
+    <string name="occupation_required">Pekerjaan wajib dipilih</string>
+    <string name="economic_status_required">Status ekonomi wajib dipilih</string>
+    <string name="emergency_contact_name_required">Nama kontak darurat wajib diisi</string>
+    <string name="emergency_contact_relationship_required">Hubungan kontak darurat wajib diisi</string>
+    <string name="emergency_contact_phone_required">Telepon kontak darurat wajib diisi</string>
+    
+    <!-- Dashboard Screen -->
+    <string name="loading_dashboard">Memuat dashboard...</string>
+    <string name="failed_to_load_dashboard">Gagal memuat dashboard</string>
+    
+    <!-- Disaster List Screen -->
+    <string name="recently_reported_disasters">Bencana yang Baru Dilaporkan</string>
+    <string name="disasters_being_handled">Bencana yang Sedang Ditangani</string>
+    <string name="successfully_resolved_disasters">Bencana yang Berhasil Diselesaikan</string>
+    
+    <!-- Report Disaster Screen -->
+    <string name="submit_report_button">Kirim Laporan</string>
+    
+    <!-- Emergency Screen -->
+    <string name="tap_any_contact_to_call">Ketuk kontak mana pun untuk menelepon</string>
+    
+    <!-- Notifications Screen -->
+    <string name="an_error_occurred">Terjadi kesalahan</string>
+    
+    <!-- Onboarding Screen -->
+    <string name="welcome_to_gmls">Selamat Datang di GMLS</string>
+    <string name="gmls_description">Sistem manajemen bencana untuk komunitas Lebak Selatan</string>
+    <string name="interactive_disaster_map">Peta Bencana Interaktif</string>
+    <string name="map_description">Lihat dan pantau bencana di area Anda secara real-time</string>
+    <string name="stay_safe_connected">Tetap Aman dan Terhubung</string>
+    <string name="safety_description">Akses kontak darurat dan sumber daya keselamatan dengan mudah</string>
+    <string name="start_button">Mulai</string>
+    <string name="next_button">Selanjutnya</string>
+    
+    <!-- Profile Screen -->
+    <string name="not_set">Tidak Diatur</string>
+    <string name="personal_information">Informasi Pribadi</string>
+    <string name="address_section">Bagian Alamat</string>
+    <string name="blood_type_field">Golongan Darah</string>
+    <string name="medical_conditions_field">Kondisi Medis</string>
+    <string name="disabilities_field">Disabilitas</string>
+    <string name="emergency_contact_section">Bagian Kontak Darurat</string>
+    <string name="emergency_contact_name_field">Nama Kontak Darurat</string>
+    <string name="emergency_contact_relationship_field">Hubungan Kontak Darurat</string>
+    <string name="emergency_contact_phone_field">Telepon Kontak Darurat</string>
+    <string name="household_information_section">Bagian Informasi Rumah Tangga</string>
+    <string name="household_members_label">Anggota Rumah Tangga</string>
+    <string name="none_label">Tidak Ada</string>
+    
+    <!-- Google Play Services Helper -->
+    <string name="google_play_missing">Google Play Services tidak tersedia</string>
+    <string name="google_play_update_required">Google Play Services perlu diperbarui</string>
+    <string name="google_play_disabled">Google Play Services dinonaktifkan</string>
+    <string name="google_play_invalid">Google Play Services tidak valid</string>
+    
+    <!-- Additional UI strings for hard-coded English text -->
+    <string name="all_filter">Semua</string>
+    <string name="description_label">Deskripsi</string>
+    <string name="images_label">Gambar</string>
+    <string name="recent_crashes_title">Crash Terbaru</string>
+    <string name="status_distribution">Distribusi Status</string>
+    <string name="controls_label">Kontrol</string>
+    <string name="layers_label">Layer</string>
+    <string name="disasters_layer">Bencana</string>
+    <string name="users_layer">Pengguna</string>
+    <string name="online_only_filter">Hanya Online</string>
+    <string name="filter_label">Filter</string>
+    <string name="online_label">Online</string>
+    <string name="verified_user_label">Pengguna Terverifikasi</string>
+    <string name="user_analytics_title">Analitik Pengguna</string>
+    <string name="recent_searches_title">Pencarian Terbaru</string>
+    <string name="suggestions_title">Saran</string>
+    <string name="categories_label">Kategori</string>
+    <string name="sort_by_label">Urutkan berdasarkan</string>
+    <string name="location_sharing_label">Berbagi Lokasi</string>
+    <string name="live_status">LANGSUNG</string>
+    <string name="critical_alert">Peringatan Kritis</string>
+    <string name="high_priority_alert">Prioritas Tinggi</string>
+    <string name="warning_alert">Peringatan</string>
+    <string name="notice_alert">Pemberitahuan</string>
+    <string name="severity_label">Keparahan: %s</string>
+    <string name="critical_severity">Kritis</string>
+    <string name="high_severity">Tinggi</string>
+    <string name="medium_severity">Sedang</string>
+    <string name="low_severity">Rendah</string>
+    <string name="location_permission_required_title">Izin Lokasi Diperlukan</string>
+    <string name="location_permission_required_message">Silakan berikan izin lokasi untuk melihat lokasi Anda di peta</string>
+    <string name="zoom_in_description">Perbesar</string>
+    <string name="zoom_out_description">Perkecil</string>
+    <string name="my_location_description">Lokasi saya</string>
+    <string name="go_back_description">Kembali</string>
+    <string name="filter_disasters_description">Filter bencana</string>
+    <string name="disaster_image_description">Gambar bencana</string>
+    <string name="additional_disaster_image_description">Gambar bencana tambahan</string>
+    <string name="view_on_map_description">Lihat di peta</string>
+    
+    <!-- Additional missing strings -->
+    <string name="disaster_type_distribution">Distribusi Jenis Bencana</string>
+    <string name="monthly_disaster_trends">Tren Bencana Bulanan</string>
+    <string name="admin_activity_logs">Log Aktivitas Admin</string>
+    <string name="no_recent_activity">Tidak ada aktivitas terbaru</string>
+    <string name="grant_location_permission">Berikan Izin Lokasi</string>
+    <string name="enable_background_location_description">Aktifkan lokasi latar belakang untuk pelacakan berkelanjutan saat aplikasi ditutup</string>
+    <string name="enable_background_location">Aktifkan Lokasi Latar Belakang</string>
+    <string name="main_metrics">Metrik Utama</string>
+    <string name="recent_activity_analytics">Aktivitas Terbaru</string>
+    <string name="analytics_dashboard_title">Dasbor Analitik</string>
+    <string name="create_new_accounts">Buat Akun Baru</string>
+    <string name="logout_confirmation_title">Konfirmasi Keluar</string>
+    
+    <!-- Admin Bootstrap strings -->
+    <string name="admin_user_default">Pengguna Admin</string>
+    <string name="default_user">Pengguna</string>
+    <string name="user_document_missing">Dokumen pengguna hilang</string>
+    <string name="created_user_document">Dokumen pengguna dibuat</string>
+    <string name="missing_fields_format">Field yang hilang: %s</string>
+    <string name="added_missing_fields">Field yang hilang ditambahkan</string>
+    <string name="no_permission_issues_found">Tidak ada masalah izin ditemukan</string>
+    <string name="fixed_issues_format">Masalah diperbaiki: %s</string>
+    <string name="report_submitted_successfully">Laporan berhasil dikirim</string>
+    
+    <!-- Analytics strings -->
+    <string name="new_disaster_reported">Bencana Baru Dilaporkan</string>
+    <string name="disaster_verified">Bencana Terverifikasi</string>
+    <string name="response_in_progress">Respons Sedang Berlangsung</string>
+    <string name="disaster_resolved">Bencana Teratasi</string>
+    <string name="unknown">Tidak Diketahui</string>
+    <string name="people_affected_1000_plus">1000+ orang terdampak</string>
+    <string name="people_affected_500_1000">500-1000 orang terdampak</string>
+    <string name="people_affected_100_500">100-500 orang terdampak</string>
+    <string name="people_affected_less_100">Kurang dari 100 orang terdampak</string>
+    
+    <!-- Location and tracking strings -->
+    <string name="please_login_to_share_location">Silakan masuk untuk berbagi lokasi Anda</string>
+    <string name="location_services_disabled">Layanan lokasi dinonaktifkan. Silakan aktifkan GPS di pengaturan.</string>
+    <string name="fatal_error_location_tracking">Kesalahan fatal dalam pengaturan pelacakan lokasi: %s</string>
+    <string name="email_already_in_use_invalid">Alamat email sudah digunakan atau tidak valid</string>
+    <string name="heavy_rainfall_warning">Curah hujan lebat dapat menyebabkan banjir bandang di daerah Anda. Tetap waspada dan hindari daerah rendah.</string>
+    <string name="important_disaster_alerts">Peringatan penting tentang bencana di daerah Anda</string>
+    
+    <!-- Disaster Status Localization -->
+    <string name="disaster_status_reported">Dilaporkan</string>
+    <string name="disaster_status_verified">Terverifikasi</string>
+    <string name="disaster_status_in_progress">Sedang Ditangani</string>
+    <string name="disaster_status_resolved">Teratasi</string>
+    
+    <!-- Severity Level Localization -->
+    <string name="severity_level_low">Rendah</string>
+    <string name="severity_level_medium">Sedang</string>
+    
+    <!-- Additional Profile Field Labels -->
+    <string name="full_name_field">Nama Lengkap</string>
+    <string name="email_field">Email</string>
+    <string name="phone_number_field">Nomor Telepon</string>
+    <string name="birth_date_field">Tanggal Lahir</string>
+    <string name="gender_field">Jenis Kelamin</string>
+    <string name="national_id_field">NIK</string>
+    <string name="family_card_field">Nomor KK</string>
+    <string name="place_of_birth_field">Tempat Lahir</string>
+    <string name="religion_field">Agama</string>
+    <string name="marital_status_field">Status Perkawinan</string>
+    <string name="family_relationship_field">Hubungan Keluarga</string>
+    <string name="education_field">Pendidikan Terakhir</string>
+    <string name="occupation_field">Pekerjaan</string>
+    <string name="economic_status_field">Status Ekonomi</string>
+    <string name="latitude_field">Lintang</string>
+    <string name="longitude_field">Bujur</string>
+    <string name="home_address_field">Alamat Rumah</string>
+    
+    <!-- Blood type options -->
+    <string name="blood_type_a">A</string>
+    <string name="blood_type_b">B</string>
+    <string name="blood_type_ab">AB</string>
+    <string name="blood_type_o">O</string>
+    <string name="blood_type_unknown">Tidak Diketahui</string>
+    
+    <!-- Address form labels -->
+    <string name="province_required">Provinsi wajib dipilih</string>
+    <string name="subdistrict_label">Kecamatan</string>
+    <string name="postal_code_label">Kode Pos</string>
+    
+    <!-- Content descriptions for accessibility -->
+    <string name="back_description">Kembali</string>
+    <string name="edit_profile_description">Edit profil</string>
+    <string name="profile_photo_description">Foto Profil</string>
+    <string name="select_date_description">Pilih tanggal</string>
+    <string name="hide_password_description">Sembunyikan kata sandi</string>
+    <string name="show_password_description">Tampilkan kata sandi</string>
+    <string name="administrator_description">Administrator</string>
+    <string name="search_description">Cari</string>
+    <string name="clear_search_description">Hapus</string>
+    <string name="close_description">Tutup</string>
+    <string name="start_voice_search_description">Mulai pencarian suara</string>
+    <string name="stop_voice_search_description">Hentikan pencarian suara</string>
+    <string name="close_alert_description">Tutup peringatan</string>
+    <string name="report_disaster_fab_description">Laporkan bencana</string>
+    
+    <!-- Welcome messages -->
+    <string name="welcome_back_user">Selamat datang kembali</string>
+    <string name="gmls_app_name">GMLS</string>
+    <string name="gmls_subtitle">Gugus Mitigasi Lebak Selatan</string>
+    <string name="admin_badge">ADMIN</string>
+    <string name="navigation_header">Navigasi</string>
+    <string name="logout_option">Keluar</string>
+    <string name="logout_description">Keluar dari akun Anda</string>
+    <string name="logout_confirmation_dialog_title">Konfirmasi Keluar</string>
+    <string name="logout_dialog_button">Keluar</string>
+    <string name="cancel_dialog_button">Batal</string>
+    
+    <!-- Navigation descriptions -->
+    <string name="dashboard_description">Lihat dashboard Anda</string>
+    <string name="disasters_description">Telusuri laporan bencana</string>
+    <string name="report_disaster_description">Laporkan bencana baru</string>
+    <string name="profile_description">Kelola profil Anda</string>
+    <string name="resources_description">Sumber daya darurat</string>
+    <string name="settings_description">Pengaturan aplikasi</string>
+    
+    <!-- Location tracking -->
+    <string name="location_permission_required_text">Izin lokasi diperlukan</string>
+    <string name="permission_denied_text">Izin ditolak</string>
+    <string name="ready_to_share_text">Siap untuk berbagi</string>
+    <string name="need_login_text">Perlu masuk</string>
+    <string name="location_service_error_text">Kesalahan layanan lokasi</string>
+    <string name="start_sharing_text">Mulai Berbagi</string>
+    <string name="stop_sharing_text">Hentikan Berbagi</string>
+    
+    <!-- Common button text -->
+    <string name="confirmation_button">Konfirmasi</string>
+    <string name="cancel_button">Batal</string>
+    <string name="try_again_button">Coba Lagi</string>
+    
+    <!-- Error fallback -->
+    <string name="error_default">Kesalahan</string>
+    
+    <!-- Time formatting -->
+    <string name="updated_at_time">Diperbarui %s</string>
+    <string name="loading_again">Memuat ulang...</string>
+    
+    <!-- Missing strings for current Indonesian hardcoded text -->
+    <string name="active_sharing_location">Aktif • Berbagi lokasi</string>
+    <string name="error_check_permissions">Kesalahan • Periksa izin</string>
+    <string name="ready_background_optional">Siap • Latar belakang opsional</string>
+    
+    <!-- Admin related strings -->
+    <string name="unknown_admin">Admin Tidak Dikenal</string>
+    <string name="location_colon">Lokasi:</string>
+    <string name="role_colon">Peran:</string>
+    <string name="status_colon">Status:</string>
+    <string name="reported_colon">Dilaporkan:</string>
+    <string name="unverified_status">Belum Terverifikasi</string>
+    
+    <!-- Dashboard and UI strings -->
+    <string name="start_typing_search_disasters">Mulai mengetik untuk mencari bencana...</string>
+    <string name="emergency_warning">Peringatan Darurat</string>
+    <string name="disaster_type_label">Jenis Bencana</string>
+    <string name="time_range_label">Rentang Waktu</string>
+    <string name="today_filter">Hari Ini</string>
+    <string name="this_week_filter">Minggu Ini</string>
+    <string name="this_month_filter">Bulan Ini</string>
+    
+    <!-- Emergency contacts -->
+    <string name="emergency_contacts_label">Kontak Darurat</string>
+    <string name="evacuation_centers">Pusat Evakuasi</string>
+    <string name="emergency_supplies">Perlengkapan Darurat</string>
+    <string name="safety_guidelines">Panduan Keselamatan</string>
+    <string name="fire_department">Pemadam Kebakaran</string>
+    <string name="gas_emergency">Darurat Gas</string>
+    
+    <!-- Location picker -->
+    <string name="selected_location">Lokasi Terpilih</string>
+    <string name="confirm_location_description">Konfirmasi Lokasi</string>
+    
+    <!-- Analytics -->
+    <string name="total_disasters_stat">Total Bencana</string>
+    <string name="active_incidents_stat">Insiden Aktif</string>
+    <string name="resolved_cases_stat">Kasus Diselesaikan</string>
+    <string name="people_affected_stat">Orang Terdampak</string>
+    <string name="being_handled">Sedang Ditangani</string>
+    <string name="unknown_label">Tidak Diketahui</string>
+    <string name="last_incident_format">Insiden terakhir: %s</string>
+    
+    <!-- Address -->
+    <string name="complete_address_optional">Alamat Lengkap (Opsional)</string>
+    
+    <!-- Various status messages -->
+    <string name="error_occurred">Terjadi kesalahan</string>
+    <string name="show_control">Tampilkan Kontrol</string>
+    <string name="hide_control">Sembunyikan Kontrol</string>
+    <string name="disaster_details">Detail Bencana</string>
+    <string name="user_details">Detail Pengguna</string>
+    
+    <!-- Additional hardcoded strings -->
+    <string name="close_icon_description">Tutup</string>
+    <string name="open_icon_description">Buka</string>
+    <string name="call_description">Panggil</string>
+    <string name="calendar_description">Kalender</string>
+    <string name="error_icon_description">Kesalahan</string>
+    <string name="verified_description">Terverifikasi</string>
+    <string name="profile_section_description">Bagian profil. Selamat datang %s. Ketuk untuk melihat atau edit profil.</string>
+    <string name="logout_semantics">Keluar</string>
+    
+    <!-- Location and address labels -->
+    <string name="province_required_label">Provinsi *</string>
+    <string name="city_regency_required_label">Kabupaten/Kota *</string>
+    <string name="village_label">Kelurahan/Desa</string>
+    
+    <!-- Emergency contacts -->
+    <string name="police_name">Polisi</string>
+    
+    <!-- Filter labels -->
+    <string name="severity_filter">Severity</string>
+    <string name="all_option">Semua</string>
+    <string name="custom_filter">Kustom</string>
+    
+    <!-- General labels -->
+    <string name="user_default">Pengguna</string>
+    <string name="critical_label">Kritis</string>
+    <string name="warning_label">Peringatan</string>
+    
+    <!-- Disaster Types -->
+    <string name="disaster_type_earthquake">Gempa Bumi</string>
+    <string name="disaster_type_flood">Banjir</string>
+    <string name="disaster_type_wildfire">Kebakaran Hutan</string>
+    <string name="disaster_type_landslide">Tanah Longsor</string>
+    <string name="disaster_type_volcano">Gunung Berapi</string>
+    <string name="disaster_type_tsunami">Tsunami</string>
+    <string name="disaster_type_hurricane">Badai</string>
+    <string name="disaster_type_tornado">Tornado</string>
+    <string name="disaster_type_other">Lainnya</string>
+    
+    <!-- Missing severity level strings -->
+    <string name="severity_level_high">Tinggi</string>
+    <string name="severity_level_critical">Kritis</string>
+    
+    <!-- Missing time strings -->
+    <string name="time_just_now">Baru saja</string>
+    <string name="time_minutes_ago">%d menit yang lalu</string>
+    <string name="time_hours_ago">%d jam yang lalu</string>
+    <string name="time_days_ago">%d hari yang lalu</string>
+    
+    <!-- Missing UI strings -->
+    <string name="profile_picture">Foto Profil</string>
+    <string name="guest_user">Pengguna Tamu</string>
+    <string name="admin_role">Admin</string>
+    <string name="moderator_role">Moderator</string>
+    <string name="user_role">Pengguna</string>
+    <string name="disaster_list">Daftar Bencana</string>
+    <string name="admin_section">Bagian Admin</string>
+    <string name="help_support">Bantuan &amp; Dukungan</string>
+    <string name="logout">Keluar</string>
+    <string name="open_drawer">Open navigation drawer</string>
+    <string name="location_service_disabled_text">Layanan lokasi dinonaktifkan</string>
+    <string name="enable_location_services">Aktifkan Layanan Lokasi</string>
+    <string name="grant_permissions_in_settings">Berikan Izin di Pengaturan</string>
+    
+    </resources> 

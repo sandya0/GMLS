@@ -14,9 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.getDisplayName
 import com.example.gmls.ui.theme.Red
 
 /**
@@ -66,7 +69,7 @@ fun DisasterTypeIcon(
         backgroundColor = color.copy(alpha = 0.1f),
         iconColor = color,
         iconSize = iconSize,
-        contentDescription = contentDescription ?: type.displayName,
+        contentDescription = contentDescription ?: type.getDisplayName(),
         modifier = modifier.size(size)
     )
 }
@@ -85,6 +88,7 @@ fun StatusBadge(
             .clip(RoundedCornerShape(16.dp))
             .background(color.copy(alpha = 0.1f))
             .padding(horizontal = 12.dp, vertical = 6.dp)
+            .semantics { this.contentDescription = text }
     ) {
         androidx.compose.material3.Text(
             text = text,

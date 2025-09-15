@@ -4,20 +4,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import android.content.Context
+import com.example.gmls.R
 
 /**
  * Enum representing different types of disasters that can be reported
  */
-enum class DisasterType(val displayName: String) {
-    EARTHQUAKE("Earthquake"),
-    FLOOD("Flood"),
-    WILDFIRE("Wildfire"),
-    LANDSLIDE("Landslide"),
-    VOLCANO("Volcano"),
-    TSUNAMI("Tsunami"),
-    HURRICANE("Hurricane"),
-    TORNADO("Tornado"),
-    OTHER("Other");
+enum class DisasterType {
+    EARTHQUAKE,
+    FLOOD,
+    WILDFIRE,
+    LANDSLIDE,
+    VOLCANO,
+    TSUNAMI,
+    HURRICANE,
+    TORNADO,
+    OTHER;
 
     companion object {
         /**
@@ -54,4 +58,56 @@ enum class DisasterType(val displayName: String) {
             }
         }
     }
+}
+
+/**
+ * Extension function to get localized display name for disaster type (for Composables)
+ */
+@Composable
+fun DisasterType.getDisplayName(): String {
+    return when (this) {
+        DisasterType.EARTHQUAKE -> stringResource(R.string.disaster_type_earthquake)
+        DisasterType.FLOOD -> stringResource(R.string.disaster_type_flood)
+        DisasterType.WILDFIRE -> stringResource(R.string.disaster_type_wildfire)
+        DisasterType.LANDSLIDE -> stringResource(R.string.disaster_type_landslide)
+        DisasterType.VOLCANO -> stringResource(R.string.disaster_type_volcano)
+        DisasterType.TSUNAMI -> stringResource(R.string.disaster_type_tsunami)
+        DisasterType.HURRICANE -> stringResource(R.string.disaster_type_hurricane)
+        DisasterType.TORNADO -> stringResource(R.string.disaster_type_tornado)
+        DisasterType.OTHER -> stringResource(R.string.disaster_type_other)
+    }
+}
+
+/**
+ * Extension function to get localized display name for disaster type (for non-Composables)
+ */
+fun DisasterType.getDisplayName(context: android.content.Context): String {
+    return when (this) {
+        DisasterType.EARTHQUAKE -> context.getString(R.string.disaster_type_earthquake)
+        DisasterType.FLOOD -> context.getString(R.string.disaster_type_flood)
+        DisasterType.WILDFIRE -> context.getString(R.string.disaster_type_wildfire)
+        DisasterType.LANDSLIDE -> context.getString(R.string.disaster_type_landslide)
+        DisasterType.VOLCANO -> context.getString(R.string.disaster_type_volcano)
+        DisasterType.TSUNAMI -> context.getString(R.string.disaster_type_tsunami)
+        DisasterType.HURRICANE -> context.getString(R.string.disaster_type_hurricane)
+        DisasterType.TORNADO -> context.getString(R.string.disaster_type_tornado)
+        DisasterType.OTHER -> context.getString(R.string.disaster_type_other)
+    }
+}
+
+/**
+ * Extension property to get Indonesian display name for disaster type (for non-UI contexts)
+ * This provides the hardcoded Indonesian names for filtering and comparison purposes
+ */
+val DisasterType.displayName: String
+    get() = when (this) {
+        DisasterType.EARTHQUAKE -> "Gempa Bumi"
+        DisasterType.FLOOD -> "Banjir"
+        DisasterType.WILDFIRE -> "Kebakaran Hutan"
+        DisasterType.LANDSLIDE -> "Tanah Longsor"
+        DisasterType.VOLCANO -> "Gunung Berapi"
+        DisasterType.TSUNAMI -> "Tsunami"
+        DisasterType.HURRICANE -> "Badai"
+        DisasterType.TORNADO -> "Tornado"
+        DisasterType.OTHER -> "Lainnya"
 }

@@ -10,34 +10,42 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.gmls.R
 import com.example.gmls.ui.components.EmergencyAlertCard
 import com.example.gmls.ui.components.EmergencySeverity
 import com.example.gmls.ui.theme.Error
 import com.example.gmls.ui.theme.Info
 import com.example.gmls.ui.theme.Red
 import com.example.gmls.ui.theme.Warning
+import com.example.gmls.ui.viewmodels.NotificationViewModel
 import java.util.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.example.gmls.domain.model.Notification as DomainNotification
+import com.example.gmls.domain.model.NotificationType
 
 /**
- * Data class representing a notification
+ * Data class representing a notification in UI
  */
-data class Notification(
+data class UINotification(
     val id: String,
     val title: String,
     val message: String,
     val timestamp: Date,
-    val type: NotificationType,
+    val type: UINotificationType,
     val read: Boolean,
     val disasterId: String? = null
 )
 
 /**
- * Enum representing different notification types
+ * Enum representing different notification types in UI
  */
-enum class NotificationType {
+enum class UINotificationType {
     EMERGENCY, DISASTER_ALERT, SYSTEM, INFO
 }
 
@@ -48,84 +56,52 @@ enum class NotificationType {
 @Composable
 fun NotificationsScreen(
     onBackClick: () -> Unit,
-    onNotificationClick: (Notification) -> Unit,
+    onNotificationClick: (UINotification) -> Unit,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    viewModel: NotificationViewModel = hiltViewModel()
 ) {
-    // In a real app, these would come from a ViewModel
-    val notifications = remember {
-        listOf(
-            Notification(
-                id = "1",
-                title = "Flash Flood Warning",
-                message = "Heavy rainfall could cause flash flooding in your area. Stay alert and avoid low-lying areas.",
-                timestamp = Date(System.currentTimeMillis() - 3_600_000), // 1 hour ago
-                type = NotificationType.EMERGENCY,
-                read = false,
-                disasterId = "flood123"
-            ),
-            Notification(
-                id = "2",
-                title = "Earthquake Reported",
-                message = "A magnitude 5.5 earthquake has been reported near your location. Check for damage and stay away from damaged buildings.",
-                timestamp = Date(System.currentTimeMillis() - 86_400_000), // 1 day ago
-                type = NotificationType.DISASTER_ALERT,
-                read = true,
-                disasterId = "quake456"
-            ),
-            Notification(
-                id = "3",
-                title = "Profile Updated",
-                message = "Your emergency contact information has been successfully updated.",
-                timestamp = Date(System.currentTimeMillis() - 259_200_000), // 3 days ago
-                type = NotificationType.SYSTEM,
-                read = true
-            ),
-            Notification(
-                id = "4",
-                title = "New Safety Tips",
-                message = "Check out our new safety tips for earthquake preparedness.",
-                timestamp = Date(System.currentTimeMillis() - 604_800_000), // 1 week ago
-                type = NotificationType.INFO,
-                read = true
-            )
-        )
-    }
-
-    var showUnreadOnly by remember { mutableStateOf(false) }
-
-    val filteredNotifications = remember(notifications, showUnreadOnly) {
-        if (showUnreadOnly) {
-            notifications.filter { !it.read }
+    val state by viewModel.state.collectAsState()
+    val filteredNotifications = remember(state.notifications, state.showUnreadOnly) {
+        val uiNotifications = state.notifications.map { it.toUINotification() }
+        if (state.showUnreadOnly) {
+            uiNotifications.filter { !it.read }
         } else {
-            notifications
+            uiNotifications
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notifications") },
+                title = { Text(stringResource(R.string.notifications_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.semantics { contentDescription = "Kembali" }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = null
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showUnreadOnly = !showUnreadOnly }) {
+                    IconButton(
+                        onClick = { viewModel.toggleUnreadFilter() },
+                        modifier = Modifier.semantics {
+                            contentDescription = if (state.showUnreadOnly) "Tampilkan semua notifikasi" else "Tampilkan hanya notifikasi belum dibaca"
+                        }
+                    ) {
                         Icon(
-                            imageVector = if (showUnreadOnly) Icons.Default.CheckCircle else Icons.Default.Circle,
-                            contentDescription = if (showUnreadOnly) "Show all" else "Show unread only"
+                            imageVector = if (state.showUnreadOnly) Icons.Default.CheckCircle else Icons.Default.Circle,
+                            contentDescription = null
                         )
                     }
 
-                    IconButton(onClick = { /* Mark all as read */ }) {
+                    IconButton(
+                        onClick = { viewModel.markAllAsRead() },
+                                                    modifier = Modifier.semantics { contentDescription = "Tandai semua sebagai sudah dibaca" }
+                    ) {
                         Icon(
                             imageVector = Icons.Default.MarkEmailRead,
-                            contentDescription = "Mark all as read"
+                            contentDescription = null
                         )
                     }
                 }
@@ -138,69 +114,109 @@ fun NotificationsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (filteredNotifications.isEmpty()) {
-                // Empty state
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
+            when {
+                state.error != null -> {
+                    // Error state
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = if (showUnreadOnly) {
-                            "No unread notifications"
-                        } else {
-                            "No notifications yet"
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center
-                    )
+                        Text(
+                            text = state.error ?: stringResource(R.string.an_error_occurred),
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.error
+                        )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
-                        text = if (showUnreadOnly) {
-                            "You've read all your notifications"
-                        } else {
-                            "When you receive notifications, they will appear here"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        Button(
+                            onClick = { viewModel.clearError() },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text(stringResource(R.string.retry))
+                        }
+                    }
+                }
+                state.isLoading -> {
+                    // Loading state
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Red
                     )
                 }
-            } else {
-                // List of notifications
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(filteredNotifications) { notification ->
-                        NotificationItem(
-                            notification = notification,
-                            onClick = { onNotificationClick(notification) }
+                filteredNotifications.isEmpty() -> {
+                    // Empty state
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = if (state.showUnreadOnly) {
+                                stringResource(R.string.no_unread_notifications)
+                            } else {
+                                stringResource(R.string.no_notifications_yet)
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = if (state.showUnreadOnly) {
+                                stringResource(R.string.all_notifications_read)
+                            } else {
+                                stringResource(R.string.notifications_will_appear_here)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                     }
                 }
-            }
-
-            // Loading indicator
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Red
-                )
+                else -> {
+                    // List of notifications
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = filteredNotifications,
+                            key = { notification -> notification.id }
+                        ) { notification ->
+                            NotificationItem(
+                                notification = notification,
+                                onClick = { onNotificationClick(notification) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -212,21 +228,22 @@ fun NotificationsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationItem(
-    notification: Notification,
+    notification: UINotification,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val (color, icon) = when (notification.type) {
-        NotificationType.EMERGENCY -> Pair(Error, Icons.Default.Warning)
-        NotificationType.DISASTER_ALERT -> Pair(Warning, Icons.Default.Notifications)
-        NotificationType.SYSTEM -> Pair(Info, Icons.Default.Info)
-        NotificationType.INFO -> Pair(MaterialTheme.colorScheme.secondary, Icons.Default.Lightbulb)
+        UINotificationType.EMERGENCY -> Pair(Error, Icons.Default.Warning)
+        UINotificationType.DISASTER_ALERT -> Pair(Warning, Icons.Default.Notifications)
+        UINotificationType.SYSTEM -> Pair(Info, Icons.Default.Info)
+        UINotificationType.INFO -> Pair(MaterialTheme.colorScheme.secondary, Icons.Default.Lightbulb)
     }
 
     Card(
         onClick = onClick,
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .semantics { contentDescription = "Notifikasi: ${notification.title}. ${notification.message}" },
         colors = CardDefaults.cardColors(
             containerColor = if (!notification.read) {
                 color.copy(alpha = 0.05f)
@@ -248,7 +265,7 @@ fun NotificationItem(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = notification.type.name,
                     tint = color,
                     modifier = Modifier.size(24.dp)
                 )
@@ -298,21 +315,50 @@ fun NotificationItem(
 /**
  * Format a timestamp for display
  */
+@Composable
 fun getFormattedTime(date: Date): String {
     val now = System.currentTimeMillis()
     val diff = now - date.time
 
     return when {
-        diff < 60 * 1000 -> "Just now"
-        diff < 60 * 60 * 1000 -> "${diff / (60 * 1000)} minutes ago"
-        diff < 24 * 60 * 60 * 1000 -> "${diff / (60 * 60 * 1000)} hours ago"
-        diff < 7 * 24 * 60 * 60 * 1000 -> "${diff / (24 * 60 * 60 * 1000)} days ago"
+        diff < 60 * 1000 -> stringResource(R.string.just_now)
+        diff < 60 * 60 * 1000 -> {
+            val minutes = (diff / (60 * 1000)).toInt()
+            stringResource(R.string.minutes_ago, minutes)
+        }
+        diff < 24 * 60 * 60 * 1000 -> {
+            val hours = (diff / (60 * 60 * 1000)).toInt()
+            stringResource(R.string.hours_ago, hours)
+        }
+        diff < 7 * 24 * 60 * 60 * 1000 -> {
+            val days = (diff / (24 * 60 * 60 * 1000)).toInt()
+            stringResource(R.string.days_ago, days)
+        }
         else -> {
             val calendar = Calendar.getInstance()
             calendar.time = date
-            val month = calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.getDefault())
+            val month = calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale("id", "ID"))
             val day = calendar.get(Calendar.DAY_OF_MONTH)
             "$month $day"
         }
     }
+}
+
+fun DomainNotification.toUINotification(): UINotification {
+    return UINotification(
+        id = id,
+        title = title,
+        message = message,
+        timestamp = java.util.Date(timestamp),
+        type = type.toUINotificationType(),
+        read = read,
+        disasterId = data["disasterId"] as? String
+    )
+}
+
+fun NotificationType.toUINotificationType(): UINotificationType = when (this) {
+    NotificationType.EMERGENCY -> UINotificationType.EMERGENCY
+    NotificationType.DISASTER_ALERT -> UINotificationType.DISASTER_ALERT
+    NotificationType.SYSTEM_UPDATE, NotificationType.USER_ACTION -> UINotificationType.SYSTEM
+    NotificationType.INFO, NotificationType.WARNING, NotificationType.SUCCESS, NotificationType.ERROR -> UINotificationType.INFO
 }

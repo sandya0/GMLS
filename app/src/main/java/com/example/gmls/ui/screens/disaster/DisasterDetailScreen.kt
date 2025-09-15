@@ -1,5 +1,7 @@
 package com.example.gmls.ui.screens.disaster
 
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,14 +18,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.gmls.R
 import com.example.gmls.domain.model.Disaster
 import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.displayName
+import com.example.gmls.domain.model.getDisplayName
 import com.example.gmls.domain.model.SeverityLevel
 import com.example.gmls.ui.theme.Red
+import com.example.gmls.ui.theme.Warning
+import com.example.gmls.ui.theme.AccentBlue
+import com.example.gmls.ui.theme.Success
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,15 +50,73 @@ fun DisasterDetailScreen(
     val disasterColor = DisasterType.getColorForType(disaster.type)
     val disasterIcon = DisasterType.getIconForType(disaster.type)
 
+    // Get string resources outside the lambda
+    val affectedLabel = stringResource(R.string.affected_label)
+    val peopleSuffix = stringResource(R.string.people_suffix)
+
+    // Share function implementation
+    val shareDisaster = {
+        val shareText = buildString {
+            appendLine("🚨 ALERT BENCANA 🚨")
+            appendLine()
+            appendLine("Tipe: ${when (disaster.type) {
+                DisasterType.EARTHQUAKE -> "Gempa Bumi"
+                DisasterType.FLOOD -> "Banjir"
+                DisasterType.WILDFIRE -> "Kebakaran Hutan"
+                DisasterType.LANDSLIDE -> "Tanah Longsor"
+                DisasterType.VOLCANO -> "Gunung Berapi"
+                DisasterType.TSUNAMI -> "Tsunami"
+                DisasterType.HURRICANE -> "Badai"
+                DisasterType.TORNADO -> "Tornado"
+                DisasterType.OTHER -> "Lainnya"
+            }}")
+            appendLine("Lokasi: ${disaster.location}")
+            appendLine("Tingkat Kerentanan: ${disaster.severityLevel.name}")
+            appendLine("Waktu: ${disaster.fullFormattedTimestamp}")
+            appendLine("$affectedLabel ${disaster.affectedCount} $peopleSuffix")
+            appendLine()
+            appendLine("Deskripsi:")
+            appendLine(disaster.description)
+            appendLine()
+            appendLine("Tetap aman dan ikuti panduan darurat resmi.")
+            appendLine()
+            appendLine("Dibagikan melalui GMLS - Gugus Mitigasi Lebak Selatan")
+        }
+        
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            putExtra(Intent.EXTRA_SUBJECT, "Disaster Alert: ${when (disaster.type) {
+                DisasterType.EARTHQUAKE -> "Gempa Bumi"
+                DisasterType.FLOOD -> "Banjir"
+                DisasterType.WILDFIRE -> "Kebakaran Hutan"
+                DisasterType.LANDSLIDE -> "Tanah Longsor"
+                DisasterType.VOLCANO -> "Gunung Berapi"
+                DisasterType.TSUNAMI -> "Tsunami"
+                DisasterType.HURRICANE -> "Badai"
+                DisasterType.TORNADO -> "Tornado"
+                DisasterType.OTHER -> "Lainnya"
+            }} in ${disaster.location}")
+        }
+        
+        try {
+            context.startActivity(Intent.createChooser(shareIntent, "Bagikan Informasi Bencana"))
+        } catch (e: Exception) {
+            // Handle case where no apps can handle the share intent
+            Toast.makeText(context, context.getString(R.string.unable_to_share_try_again), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(disaster.title) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.semantics { contentDescription = "Kembali" }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = null
                         )
                     }
                 },
@@ -61,11 +130,12 @@ fun DisasterDetailScreen(
             FloatingActionButton(
                 onClick = onMapClick,
                 containerColor = Red,
-                contentColor = Color.White
+                contentColor = Color.White,
+                                            modifier = Modifier.semantics { contentDescription = "Lihat di peta" }
             ) {
                 Icon(
                     imageVector = Icons.Default.Map,
-                    contentDescription = "View on map"
+                    contentDescription = null
                 )
             }
         },
@@ -89,7 +159,7 @@ fun DisasterDetailScreen(
                             .data(disaster.images.first())
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Disaster image",
+                                                        contentDescription = "Gambar bencana",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -125,9 +195,19 @@ fun DisasterDetailScreen(
                             Spacer(modifier = Modifier.width(4.dp))
 
                             Text(
-                                text = disaster.status.name.replace("_", " "),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = color
+                                text = when (disaster.status) {
+                                    Disaster.Status.REPORTED -> "Dilaporkan"
+                                    Disaster.Status.VERIFIED -> "Terverifikasi"
+                                    Disaster.Status.IN_PROGRESS -> "Sedang Berlangsung"
+                                    Disaster.Status.RESOLVED -> "Teratasi"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = when (disaster.status) {
+                                    Disaster.Status.REPORTED -> Warning
+                                    Disaster.Status.VERIFIED -> AccentBlue
+                                    Disaster.Status.IN_PROGRESS -> Red
+                                    Disaster.Status.RESOLVED -> Success
+                                }
                             )
                         }
                     }
@@ -185,17 +265,27 @@ fun DisasterDetailScreen(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Text(
-                            text = disaster.type.displayName,
+                            text = when (disaster.type) {
+                                DisasterType.EARTHQUAKE -> "Gempa Bumi"
+                                DisasterType.FLOOD -> "Banjir"
+                                DisasterType.WILDFIRE -> "Kebakaran Hutan"
+                                DisasterType.LANDSLIDE -> "Tanah Longsor"
+                                DisasterType.VOLCANO -> "Gunung Berapi"
+                                DisasterType.TSUNAMI -> "Tsunami"
+                                DisasterType.HURRICANE -> "Badai"
+                                DisasterType.TORNADO -> "Tornado"
+                                DisasterType.OTHER -> "Lainnya"
+                            },
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
 
                     // Severity level
                     val (severityColor, severityText) = when (disaster.severityLevel) {
-                        SeverityLevel.CRITICAL -> Pair(Color(0xFFD32F2F), "Critical")
-                        SeverityLevel.HIGH -> Pair(Color(0xFFF57C00), "High")
-                        SeverityLevel.MEDIUM -> Pair(Color(0xFFFBC02D), "Medium")
-                        SeverityLevel.LOW -> Pair(Color(0xFF7CB342), "Low")
+                        SeverityLevel.CRITICAL -> Pair(Color(0xFFD32F2F), stringResource(R.string.critical_severity))
+                        SeverityLevel.HIGH -> Pair(Color(0xFFF57C00), stringResource(R.string.high_severity))
+                        SeverityLevel.MEDIUM -> Pair(Color(0xFFFBC02D), stringResource(R.string.medium_severity))
+                        SeverityLevel.LOW -> Pair(Color(0xFF7CB342), stringResource(R.string.low_severity))
                     }
 
                     Box(
@@ -207,7 +297,7 @@ fun DisasterDetailScreen(
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = "Severity: $severityText",
+                            text = stringResource(R.string.severity_label, severityText),
                             style = MaterialTheme.typography.labelMedium,
                             color = severityColor
                         )
@@ -269,7 +359,7 @@ fun DisasterDetailScreen(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Text(
-                            text = "${disaster.affectedCount} people affected",
+                            text = stringResource(R.string.people_affected, disaster.affectedCount),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -280,7 +370,7 @@ fun DisasterDetailScreen(
                 // Description
                 Column {
                     Text(
-                        text = "Description",
+                        text = stringResource(R.string.description_label),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -299,7 +389,7 @@ fun DisasterDetailScreen(
 
                     Column {
                         Text(
-                            text = "Images",
+                            text = stringResource(R.string.images_label),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -316,7 +406,7 @@ fun DisasterDetailScreen(
                                         .data(imageUrl)
                                         .crossfade(true)
                                         .build(),
-                                    contentDescription = "Additional disaster image",
+                                    contentDescription = stringResource(R.string.additional_disaster_image_description),
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .weight(1f)
@@ -336,7 +426,7 @@ fun DisasterDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { /* TODO: Implement share functionality */ },
+                        onClick = shareDisaster,
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
@@ -346,7 +436,7 @@ fun DisasterDetailScreen(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        Text("Share")
+                        Text(stringResource(R.string.share_button))
                     }
 
                     Button(
@@ -361,7 +451,7 @@ fun DisasterDetailScreen(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        Text("View on Map")
+                        Text(stringResource(R.string.view_on_map))
                     }
                 }
             }

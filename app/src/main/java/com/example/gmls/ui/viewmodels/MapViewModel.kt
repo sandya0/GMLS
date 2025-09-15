@@ -54,7 +54,7 @@ class MapViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to load disasters"
+                        error = result.exceptionOrNull()?.message ?: "Gagal memuat bencana"
                     )
                 }
             }
@@ -91,11 +91,11 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingLocation = true) }
 
-            val location = locationService.getCurrentLocation()
+            val locationResult = locationService.getCurrentLocation()
 
             _uiState.update {
                 it.copy(
-                    currentLocation = location,
+                    currentLocation = locationResult.getOrNull(),
                     isLoadingLocation = false
                 )
             }
@@ -138,6 +138,29 @@ class MapViewModel @Inject constructor(
             )
         }
     }
+
+    /**
+     * Focus on a specific disaster on the map
+     * @param disaster The disaster to focus on
+     */
+    fun focusOnDisaster(disaster: Disaster) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    focusDisaster = disaster,
+                    selectedDisaster = disaster,
+                    mapPosition = MapPosition(
+                        latitude = disaster.latitude,
+                        longitude = disaster.longitude,
+                        zoom = 15f // Closer zoom level for better detail
+                    ),
+                    // Ensure the focused disaster is visible in the filtered list
+                    selectedType = null,
+                    filteredDisasters = it.disasters
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -152,7 +175,8 @@ data class MapUiState(
     val mapPosition: MapPosition = MapPosition(-6.200000, 106.816666, 10f), // Default to Jakarta
     val isLoading: Boolean = false,
     val isLoadingLocation: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val focusDisaster: Disaster? = null // New field for focusing on a specific disaster
 )
 
 /**

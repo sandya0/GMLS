@@ -2,9 +2,11 @@ package com.example.gmls.di
 
 import com.example.gmls.data.remote.FirebaseService
 import com.example.gmls.data.remote.LocationService
+import com.example.gmls.data.repository.AdminRepositoryImpl
 import com.example.gmls.data.repository.DisasterRepositoryImpl
 import com.example.gmls.data.repository.UserRepositoryImpl
-import com.example.gmls.domain.model.UserFirebaseMapper
+import com.example.gmls.data.mapper.UserFirebaseMapper
+import com.example.gmls.domain.repository.AdminRepository
 import com.example.gmls.domain.repository.DisasterRepository
 import com.example.gmls.domain.repository.UserRepository
 import dagger.Module
@@ -42,5 +44,17 @@ object RepositoryModule {
         locationService: LocationService
     ): DisasterRepository {
         return DisasterRepositoryImpl(firebaseService, locationService)
+    }
+    
+    /**
+     * Provides the Admin Repository implementation
+     */
+    @Provides
+    @Singleton
+    fun provideAdminRepository(
+        firebaseService: FirebaseService,
+        userMapper: UserFirebaseMapper
+    ): AdminRepository {
+        return AdminRepositoryImpl(firebaseService, userMapper)
     }
 }

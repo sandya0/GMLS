@@ -2,6 +2,7 @@ package com.example.gmls.ui.screens.splash
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,12 +22,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.gmls.R
 import com.example.gmls.ui.theme.Red
 import com.example.gmls.ui.theme.White
 import kotlinx.coroutines.delay
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 
 /**
  * Splash screen shown on app startup
@@ -70,27 +79,25 @@ fun SplashScreen(
             modifier = Modifier.alpha(alphaAnim.value)
         ) {
             // App logo/icon
-            Box(
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(R.drawable.logo_gmls)
+                    .crossfade(true)
+                    .memoryCacheKey("app_logo")
+                    .build(),
+                contentDescription = "Logo GMLS",
                 modifier = Modifier
                     .size(120.dp)
-                    .background(
-                        color = White,
-                        shape = MaterialTheme.shapes.medium
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "ER",
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Red
-                )
-            }
+                    .clip(MaterialTheme.shapes.medium)
+                    .alpha(alphaAnim.value),
+                contentScale = ContentScale.Fit
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // App name
             Text(
-                text = "Emergency Response",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayMedium,
                 color = White
             )
@@ -99,7 +106,7 @@ fun SplashScreen(
 
             // App slogan/subtitle
             Text(
-                text = "Quick response saves lives",
+                text = stringResource(R.string.gmls_full_name),
                 style = MaterialTheme.typography.titleMedium,
                 color = White.copy(alpha = 0.8f)
             )

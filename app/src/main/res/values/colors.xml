@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="red">#FFE53935</color>
-    <color name="dark_red">#FFB71C1C</color>
-    <color name="accent_red">#FFFF5252</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="black">#FF000000</color>
-    <color name="light_gray">#FFEEEEEE</color>
-    <color name="gray">#FF757575</color>
-    <color name="dark_gray">#FF303030</color>
+    <!-- Light Theme Colors -->
+    <color name="red">#FF0000</color>
+    <color name="primary_variant">#FF4081</color>
+    <color name="secondary">#00BCD4</color>
+    <color name="background">#FFFFFF</color>
+    <color name="on_surface">#212121</color>
+    <color name="surface">#FFFFFF</color>
 </resources>

@@ -1,6 +1,8 @@
 package com.example.gmls.ui.screens.map
 
 import android.Manifest
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,12 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.gmls.domain.model.Disaster
 import com.example.gmls.domain.model.DisasterType
+import com.example.gmls.domain.model.getDisplayName
 import com.example.gmls.ui.components.DisasterTypeChip
 import com.example.gmls.ui.theme.Red
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -38,6 +43,19 @@ import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.google.android.gms.maps.CameraUpdateFactory
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.example.gmls.ui.components.GlobalSnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import com.google.android.gms.maps.model.BitmapDescriptor
+import androidx.compose.ui.graphics.toArgb
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.MapStyleOptions
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.DisposableEffect
+import com.example.gmls.domain.model.User
+import androidx.compose.ui.res.stringResource
+import com.example.gmls.R
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -47,17 +65,22 @@ fun MapScreen(
     onBackClick: () -> Unit,
     onFilterChange: (DisasterType?) -> Unit,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
+    successMessage: String? = null,
+    focusDisaster: Disaster? = null,
+    users: List<User>? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var selectedDisasterType by remember { mutableStateOf<DisasterType?>(null) }
-    var selectedDisaster by remember { mutableStateOf<Disaster?>(null) }
+    var selectedDisaster by remember { mutableStateOf<Disaster?>(focusDisaster) }
     var isFilterExpanded by remember { mutableStateOf(false) }
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    var mapLoaded by remember { mutableStateOf(false) }
     
     val defaultLocation = LatLng(-6.200000, 106.816666) // Jakarta
-
+    
     // Location permissions state
     val locationPermissions = rememberMultiplePermissionsState(
         permissions = listOf(
@@ -66,19 +89,91 @@ fun MapScreen(
         )
     )
 
-    // Observe permission state
+    // Map properties
+    val mapProperties by remember(locationPermissions.allPermissionsGranted) {
+        mutableStateOf(
+            MapProperties(
+                isMyLocationEnabled = locationPermissions.allPermissionsGranted,
+                mapType = MapType.NORMAL,
+                isTrafficEnabled = false
+            )
+        )
+    }
+
+    // Map UI settings
+    val mapUiSettings by remember {
+        mutableStateOf(
+            MapUiSettings(
+                zoomControlsEnabled = false,
+                myLocationButtonEnabled = false,
+                mapToolbarEnabled = true,
+                compassEnabled = true,
+                indoorLevelPickerEnabled = false,
+                rotationGesturesEnabled = true,
+                tiltGesturesEnabled = true,
+                scrollGesturesEnabled = true,
+                zoomGesturesEnabled = true
+            )
+        )
+    }
+
+    // Create CameraPositionState for controlling map camera
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            focusDisaster?.let { LatLng(it.latitude, it.longitude) } ?: defaultLocation,
+            focusDisaster?.let { 15f } ?: 10f
+        )
+    }
+
+    // Effect to update camera position and selection when focusDisaster changes
+    LaunchedEffect(focusDisaster) {
+        focusDisaster?.let { disaster ->
+            selectedDisaster = disaster
+            // Ensure we're on the main thread for camera updates
+            delay(300) // Small delay to ensure smooth transition
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newCameraPosition(
+                    CameraPosition.fromLatLngZoom(
+                        LatLng(disaster.latitude, disaster.longitude),
+                        15f
+                    )
+                ),
+                durationMs = 1000
+            )
+            // Clear any active filters to ensure the focused disaster is visible
+            selectedDisasterType = null
+            onFilterChange(null)
+        }
+    }
+
+    // Observe permission state and get location
     LaunchedEffect(locationPermissions.allPermissionsGranted) {
         if (locationPermissions.allPermissionsGranted) {
-            // Get current location when permission is granted
             try {
                 val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
                 val location = fusedLocationClient.lastLocation.await()
                 location?.let {
                     currentLocation = LatLng(it.latitude, it.longitude)
+                    // Animate camera to user location
+                    cameraPositionState.animate(
+                        update = CameraUpdateFactory.newLatLngZoom(
+                            LatLng(it.latitude, it.longitude),
+                            15f
+                        ),
+                        durationMs = 1000
+                    )
                 }
             } catch (e: Exception) {
                 // Handle location error
             }
+        }
+    }
+
+    // Handle map loading timeout
+    LaunchedEffect(Unit) {
+        delay(5000) // Wait for 5 seconds
+        if (!mapLoaded) {
+            mapLoaded = true // Force map to show even if loading callback hasn't triggered
         }
     }
 
@@ -90,315 +185,193 @@ fun MapScreen(
         }
     }
 
-    val disasterTypes = remember { DisasterType.values().toList() }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            currentLocation ?: defaultLocation,
-            15f
-        )
-    }
-
-    // Animate camera to user location when it becomes available
-    LaunchedEffect(currentLocation) {
-        currentLocation?.let { location ->
-            cameraPositionState.animate(
-                update = CameraUpdateFactory.newLatLngZoom(location, 15f)
-            )
+    // Show snackbar for error or success
+    LaunchedEffect(errorMessage, successMessage) {
+        errorMessage?.let {
+            scope.launch { snackbarHostState.showSnackbar(it) }
+        }
+        successMessage?.let {
+            scope.launch { snackbarHostState.showSnackbar(it) }
         }
     }
 
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        if (locationPermissions.allPermissionsGranted) {
-            // Show map when permission is granted
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = MapProperties(isMyLocationEnabled = true)
-            ) {
-                // Add markers for disasters here
+    Box(modifier = modifier.fillMaxSize()) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            properties = mapProperties,
+            uiSettings = mapUiSettings,
+            onMapLoaded = {
+                mapLoaded = true
+                // Ensure proper focus after map is loaded
+                focusDisaster?.let { disaster ->
+                    scope.launch {
+                        delay(500) // Small delay to ensure map is ready
+                        cameraPositionState.animate(
+                            update = CameraUpdateFactory.newCameraPosition(
+                                CameraPosition.fromLatLngZoom(
+                                    LatLng(disaster.latitude, disaster.longitude),
+                                    15f
+                                )
+                            ),
+                            durationMs = 1000
+                        )
+                    }
+                }
             }
-        } else {
-            // Show permission request UI
-            Column(
+        ) {
+            // Add markers for disasters
+            filteredDisasters.forEach { disaster ->
+                val position = LatLng(disaster.latitude, disaster.longitude)
+                val isSelected = disaster.id == selectedDisaster?.id
+                
+                Marker(
+                    state = MarkerState(position = position),
+                    title = disaster.title,
+                    snippet = disaster.location,
+                    icon = BitmapDescriptorFactory.defaultMarker(
+                        when (disaster.type) {
+                            DisasterType.EARTHQUAKE -> BitmapDescriptorFactory.HUE_ORANGE
+                            DisasterType.FLOOD -> BitmapDescriptorFactory.HUE_BLUE
+                            DisasterType.WILDFIRE -> BitmapDescriptorFactory.HUE_RED
+                            DisasterType.LANDSLIDE -> BitmapDescriptorFactory.HUE_YELLOW
+                            DisasterType.VOLCANO -> BitmapDescriptorFactory.HUE_MAGENTA
+                            DisasterType.TSUNAMI -> BitmapDescriptorFactory.HUE_CYAN
+                            DisasterType.HURRICANE -> BitmapDescriptorFactory.HUE_VIOLET
+                            DisasterType.TORNADO -> BitmapDescriptorFactory.HUE_ROSE
+                            DisasterType.OTHER -> BitmapDescriptorFactory.HUE_GREEN
+                        }
+                    ),
+                    onClick = {
+                        selectedDisaster = disaster
+                        scope.launch {
+                            // Animate to the selected disaster
+                            cameraPositionState.animate(
+                                update = CameraUpdateFactory.newCameraPosition(
+                                    CameraPosition.fromLatLngZoom(position, 15f)
+                                ),
+                                durationMs = 500
+                            )
+                        }
+                        onDisasterClick(disaster)
+                        true
+                    }
+                )
+            }
+            // User markers (admin only)
+            users?.forEach { user ->
+                if (user.latitude != null && user.longitude != null) {
+                    Marker(
+                        state = MarkerState(position = LatLng(user.latitude, user.longitude)),
+                        title = user.fullName,
+                                                    snippet = "Pengguna: ${user.email}",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                    )
+                }
+            }
+        }
+
+        // Loading overlay
+        AnimatedVisibility(
+            visible = !mapLoaded,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOff,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Location Permission Required",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Please grant location permission to view the map and nearby disasters",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { locationPermissions.launchMultiplePermissionRequest() }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text("Grant Permission")
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.loading_map),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }
 
-        // Top app bar
-        CenterAlignedTopAppBar(
-            title = { Text("Disaster Map") },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Go back"
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = { isFilterExpanded = !isFilterExpanded }) {
-                    Icon(
-                        imageVector = Icons.Default.FilterList,
-                        contentDescription = "Filter disasters"
-                    )
-                }
+        // Top app bar with semi-transparent background
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding(),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            shadowElevation = 4.dp
+        ) {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.disaster_map_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = stringResource(R.string.go_back_description)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { isFilterExpanded = !isFilterExpanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = stringResource(R.string.filter_disasters_description)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
+        }
 
-                IconButton(onClick = { /* Refresh map */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh map"
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-            ),
-            modifier = Modifier.shadow(4.dp)
-        )
-
-        // Filter panel
+        // Filter dropdown
         AnimatedVisibility(
             visible = isFilterExpanded,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 64.dp)
+                .align(Alignment.TopEnd)
+                .padding(top = 64.dp, end = 8.dp)
         ) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    .width(200.dp)
+                    .padding(8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(8.dp)
                 ) {
-                    Text(
-                        text = "Filter by Disaster Type",
-                        style = MaterialTheme.typography.titleMedium
+                    // Add "All" option
+                    DisasterTypeChip(
+                        text = stringResource(R.string.all_filter),
+                        selected = selectedDisasterType == null,
+                        onClick = {
+                            selectedDisasterType = null
+                            onFilterChange(null)
+                            isFilterExpanded = false
+                        }
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    
+                    DisasterType.values().forEach { type ->
                         DisasterTypeChip(
-                            text = "All",
-                            selected = selectedDisasterType == null,
+                            text = type.getDisplayName(),
+                            selected = selectedDisasterType == type,
                             onClick = {
-                                selectedDisasterType = null
-                                onFilterChange(null)
+                                selectedDisasterType = if (selectedDisasterType == type) null else type
+                                onFilterChange(selectedDisasterType)
+                                isFilterExpanded = false
                             }
                         )
-
-                        Spacer(modifier = Modifier.width(4.dp))
-
-                        disasterTypes.take(3).forEach { type ->
-                            DisasterTypeChip(
-                                text = type.displayName,
-                                selected = selectedDisasterType == type,
-                                onClick = {
-                                    selectedDisasterType = type
-                                    onFilterChange(type)
-                                }
-                            )
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        disasterTypes.drop(3).take(3).forEach { type ->
-                            DisasterTypeChip(
-                                text = type.displayName,
-                                selected = selectedDisasterType == type,
-                                onClick = {
-                                    selectedDisasterType = type
-                                    onFilterChange(type)
-                                }
-                            )
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        disasterTypes.drop(6).forEach { type ->
-                            DisasterTypeChip(
-                                text = type.displayName,
-                                selected = selectedDisasterType == type,
-                                onClick = {
-                                    selectedDisasterType = type
-                                    onFilterChange(type)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Bottom disaster info panel
-        AnimatedVisibility(
-            visible = selectedDisaster != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-        ) {
-            selectedDisaster?.let { disaster ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = when(disaster.type) {
-                                        DisasterType.EARTHQUAKE -> Icons.Filled.Bolt
-                                        DisasterType.FLOOD -> Icons.Filled.Water
-                                        DisasterType.WILDFIRE -> Icons.Filled.LocalFireDepartment
-                                        DisasterType.LANDSLIDE -> Icons.Filled.Terrain
-                                        DisasterType.VOLCANO -> Icons.Filled.Volcano
-                                        DisasterType.TSUNAMI -> Icons.Filled.Waves
-                                        DisasterType.HURRICANE -> Icons.Filled.Storm
-                                        DisasterType.TORNADO -> Icons.Filled.AirlineSeatFlatAngled
-                                        DisasterType.OTHER -> Icons.Filled.Warning
-                                    },
-                                    contentDescription = null,
-                                    tint = Red
-                                )
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                Text(
-                                    text = disaster.title,
-                                    style = MaterialTheme.typography.titleLarge
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Red.copy(alpha = 0.1f))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = disaster.type.displayName,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = Red
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = disaster.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                modifier = Modifier.size(16.dp)
-                            )
-
-                            Spacer(modifier = Modifier.width(4.dp))
-
-                            Text(
-                                text = disaster.location,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-
-                            Spacer(modifier = Modifier.width(16.dp))
-
-                            Icon(
-                                imageVector = Icons.Default.AccessTime,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                modifier = Modifier.size(16.dp)
-                            )
-
-                            Spacer(modifier = Modifier.width(4.dp))
-
-                            Text(
-                                text = disaster.formattedTimestamp,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { onDisasterClick(disaster) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Red
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("View Details")
-                        }
                     }
                 }
             }
@@ -413,66 +386,52 @@ fun MapScreen(
         ) {
             FloatingActionButton(
                 onClick = {
-                    val currentZoom = cameraPositionState.position.zoom
                     scope.launch {
                         cameraPositionState.animate(
-                            update = CameraUpdateFactory.zoomTo(currentZoom + 1)
+                            update = CameraUpdateFactory.zoomBy(1f),
+                            durationMs = 300
                         )
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(40.dp)
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                contentColor = MaterialTheme.colorScheme.onSurface
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Zoom in",
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.zoom_in_description))
             }
 
             FloatingActionButton(
                 onClick = {
-                    val currentZoom = cameraPositionState.position.zoom
                     scope.launch {
                         cameraPositionState.animate(
-                            update = CameraUpdateFactory.zoomTo(currentZoom - 1)
+                            update = CameraUpdateFactory.zoomBy(-1f),
+                            durationMs = 300
                         )
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(40.dp)
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                contentColor = MaterialTheme.colorScheme.onSurface
             ) {
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = "Zoom out",
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.zoom_out_description))
             }
 
             FloatingActionButton(
                 onClick = {
-                    val target = currentLocation ?: defaultLocation
                     scope.launch {
+                        val target = currentLocation ?: defaultLocation
                         cameraPositionState.animate(
-                            update = CameraUpdateFactory.newLatLngZoom(target, 15f)
+                            update = CameraUpdateFactory.newLatLngZoom(target, 15f),
+                            durationMs = 1000
                         )
                     }
                 },
-                containerColor = Red,
-                contentColor = Color.White,
-                modifier = Modifier.size(40.dp)
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(
-                    imageVector = Icons.Default.MyLocation,
-                    contentDescription = "My location",
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Default.MyLocation, contentDescription = stringResource(R.string.my_location_description))
             }
         }
 
-        // Loading indicator
+        // Loading indicator for other operations
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -480,8 +439,73 @@ fun MapScreen(
                     .background(Color.Black.copy(alpha = 0.5f)),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Red)
+                CircularProgressIndicator()
             }
         }
+
+        // Permission request
+        if (!locationPermissions.allPermissionsGranted) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.location_permission_required_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.location_permission_required_message),
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { locationPermissions.launchMultiplePermissionRequest() }
+                        ) {
+                            Text(stringResource(R.string.grant_permission))
+                        }
+                    }
+                }
+            }
+        }
+
+        GlobalSnackbarHost(snackbarHostState)
+    }
+}
+
+fun imageVectorToBitmapDescriptor(
+    context: android.content.Context,
+    imageVector: ImageVector,
+    color: Color = Color.Red,
+    sizeDp: Int = 36
+): BitmapDescriptor {
+    return try {
+        val density = context.resources.displayMetrics.density
+        val sizePx = (sizeDp * density).toInt()
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            this.color = color.toArgb()
+            style = android.graphics.Paint.Style.FILL
+        }
+        // Draw background
+        canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, paint)
+        BitmapDescriptorFactory.fromBitmap(bitmap)
+    } catch (e: Exception) {
+        BitmapDescriptorFactory.defaultMarker()
     }
 }

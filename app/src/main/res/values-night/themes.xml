@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.GMLS" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="android:colorPrimary">@color/accent_red</item>
-        <item name="android:colorAccent">@color/dark_red</item>
-        <item name="android:colorBackground">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">@color/black</item>
+    <style name="Theme.GMLS" parent="android:Theme.Material.NoActionBar">
+        <!-- Basic Android theme attributes for Dark Theme -->
+        <item name="android:colorPrimary">@color/red_dark</item>
+        <item name="android:colorPrimaryDark">@color/primary_variant_dark</item>
+        <item name="android:colorAccent">@color/secondary_dark</item>
+        
+        <!-- Window attributes for Dark Theme -->
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        
+        <!-- Text colors for Dark Theme -->
+        <item name="android:textColorPrimary">@color/on_surface_dark</item>
     </style>
 </resources>
