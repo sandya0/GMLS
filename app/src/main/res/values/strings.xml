@@ -953,4 +953,8 @@
     <string name="enable_location_services">Aktifkan Layanan Lokasi</string>
     <string name="grant_permissions_in_settings">Berikan Izin di Pengaturan</string>
     
+    <!-- Initialization error messages -->
+    <string name="admin_bootstrap_failed">Gagal melakukan bootstrap admin</string>
+    <string name="permission_fix_failed">Gagal memperbaiki izin</string>
+    
     </resources> 

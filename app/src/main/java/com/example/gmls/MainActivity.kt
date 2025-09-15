@@ -186,17 +186,13 @@ class MainActivity : ComponentActivity() {
                                 val bootstrapResult = adminBootstrap.checkAndBootstrapAdmin()
                                 if (bootstrapResult.isFailure) {
                                     Log.e(TAG, "Admin bootstrap failed: ${bootstrapResult.exceptionOrNull()?.message}")
-                                    initializationError = getString(R.string.admin_bootstrap_failed)
-                                    isInitializing = false
-                                    return@LaunchedEffect
+                                    // Continue without blocking app startup
                                 }
 
                                 val fixResult = adminBootstrap.fixPermissionIssues()
                                 if (fixResult.isFailure) {
                                     Log.e(TAG, "Permission issues fix failed: ${fixResult.exceptionOrNull()?.message}")
-                                    initializationError = getString(R.string.permission_fix_failed)
-                                    isInitializing = false
-                                    return@LaunchedEffect
+                                    // Continue without blocking app startup
                                 }
                             } else {
                                 Log.w(TAG, "Google Play Services not available (code: $resultCode), skipping admin bootstrap")
@@ -398,13 +394,19 @@ fun ErrorScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Terjadi kesalahan",
+                text = "Terjadi kesalahan saat memuat aplikasi",
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.error
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = error,
+                text = "Aplikasi mengalami masalah dan tidak dapat melanjutkan proses. Silakan coba lagi. Jika masalah berlanjut, hubungi dukungan dengan menyertakan detail kesalahan di bawah ini.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Detail kesalahan: " + error,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
